@@ -1,0 +1,516 @@
+<mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Title -->
+    <mxCell id="title" value="SoilSensor App — Actual Wireframe (Flutter)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#1B5E20;" vertex="1" parent="1">
+      <mxGeometry x="300" y="10" width="1050" height="35" as="geometry" />
+    </mxCell>
+
+    <!-- Screen labels row -->
+    <!-- S1=Dashboard x=30, S2=Scan x=310, S3=History x=590, S4=Map x=870, S5=Settings x=1150 -->
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SCREEN 1: Dashboard -->
+    <!-- ══════════════════════════════════════════════ -->
+    <mxCell id="s1_bg" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#BDBDBD;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="30" y="55" width="250" height="580" as="geometry" />
+    </mxCell>
+
+    <!-- Header bar -->
+    <mxCell id="s1_header" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="30" y="55" width="250" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_h_icon" value="🌿" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=18;fontColor=#4ade80;" vertex="1" parent="1">
+      <mxGeometry x="42" y="62" width="30" height="28" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_h_title" value="SoilSensor" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;fontColor=#f9fafb;" vertex="1" parent="1">
+      <mxGeometry x="74" y="62" width="110" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_h_sub" value="ระบบวิเคราะห์ดินอัจฉริยะ" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="74" y="80" width="130" height="14" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_h_status" value="เชื่อมต่อแล้ว" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#22c55e;strokeColor=none;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="195" y="66" width="76" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_h_device" value="● SoilSensor · A1:B2:C3..." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=8;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="74" y="95" width="170" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- Last update card -->
+    <mxCell id="s1_card_update" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="42" y="130" width="226" height="48" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_upd_lbl" value="อัปเดตล่าสุด" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="54" y="134" width="100" height="14" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_upd_val" value="02/03/68 10:30:22" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="54" y="150" width="180" height="18" as="geometry" />
+    </mxCell>
+
+    <!-- Sensor section label -->
+    <mxCell id="s1_sec_lbl" value="ค่าเซ็นเซอร์" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;fontColor=#4b5563;" vertex="1" parent="1">
+      <mxGeometry x="42" y="188" width="100" height="16" as="geometry" />
+    </mxCell>
+
+    <!-- Sensor Grid 2x4 -->
+    <!-- Row 1 -->
+    <mxCell id="s1_ph" value="pH&#xa;6.8" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="42" y="208" width="108" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_n" value="ไนโตรเจน (N)&#xa;45 mg/kg" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="160" y="208" width="108" height="52" as="geometry" />
+    </mxCell>
+    <!-- Row 2 -->
+    <mxCell id="s1_p" value="ฟอสฟอรัส (P)&#xa;32 mg/kg" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="42" y="268" width="108" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_k" value="โพแทสเซียม (K)&#xa;28 mg/kg" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="160" y="268" width="108" height="52" as="geometry" />
+    </mxCell>
+    <!-- Row 3 -->
+    <mxCell id="s1_moist" value="ความชื้น&#xa;42 %" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="42" y="328" width="108" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_temp" value="อุณหภูมิ&#xa;28.5 °C" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="160" y="328" width="108" height="52" as="geometry" />
+    </mxCell>
+    <!-- Row 4 -->
+    <mxCell id="s1_ec" value="EC&#xa;0.4 dS/m" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="42" y="388" width="108" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_sal" value="ความเค็ม&#xa;0.2 ppt" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontSize=11;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="160" y="388" width="108" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- Action buttons -->
+    <mxCell id="s1_btn_save" value="💾 บันทึกผลการวัด" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#16a34a;strokeColor=none;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="42" y="455" width="108" height="42" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_btn_rec" value="💡 ดูคำแนะนำ" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16a34a;fontColor=#16a34a;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="160" y="455" width="108" height="42" as="geometry" />
+    </mxCell>
+
+    <!-- Bottom Nav -->
+    <mxCell id="s1_nav" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="30" y="555" width="250" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_nav1" value="🌿&#xa;แดชบอร์ด" style="text;html=1;strokeColor=none;fillColor=#dcfce7;align=center;fontSize=9;fontColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_nav2" value="📡&#xa;สแกน" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="80" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_nav3" value="📊&#xa;ประวัติ" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="130" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_nav4" value="🗺️&#xa;แผนที่" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="180" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_nav5" value="⚙️&#xa;ตั้งค่า" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="230" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s1_label" value="1. Dashboard (หน้าหลัก)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=1;fontColor=#1B5E20;" vertex="1" parent="1">
+      <mxGeometry x="30" y="642" width="250" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SCREEN 2: Scan BLE -->
+    <!-- ══════════════════════════════════════════════ -->
+    <mxCell id="s2_bg" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#BDBDBD;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="310" y="55" width="250" height="580" as="geometry" />
+    </mxCell>
+
+    <!-- Header -->
+    <mxCell id="s2_header" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="310" y="55" width="250" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_h_icon" value="📡" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=16;fontColor=#4ade80;" vertex="1" parent="1">
+      <mxGeometry x="322" y="62" width="28" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_h_title" value="สแกน BLE" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;fontColor=#f9fafb;" vertex="1" parent="1">
+      <mxGeometry x="354" y="62" width="120" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_h_sub" value="ค้นหาอุปกรณ์ SoilSensor" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="354" y="80" width="150" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- Connected banner -->
+    <mxCell id="s2_conn_banner" value="✅ เชื่อมต่อกับ SoilSensor แล้ว&#xa;A1:B2:C3:D4:E5:F6" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#052e16;strokeColor=#16a34a;fontColor=#86efac;fontSize=10;align=left;" vertex="1" parent="1">
+      <mxGeometry x="322" y="122" width="226" height="38" as="geometry" />
+    </mxCell>
+
+    <!-- Scan animation circle -->
+    <mxCell id="s2_scan_ring" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="382" y="172" width="106" height="106" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_scan_inner" value="📡" style="ellipse;whiteSpace=wrap;html=1;fillColor=#16a34a;strokeColor=none;fontSize=24;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="407" y="197" width="56" height="56" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_scan_txt" value="กดปุ่มเพื่อเริ่มสแกน" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="322" y="285" width="226" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_scan_btn" value="🔍 เริ่มสแกน" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#16a34a;strokeColor=none;fontColor=#FFFFFF;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="382" y="310" width="106" height="38" as="geometry" />
+    </mxCell>
+
+    <!-- Device list -->
+    <mxCell id="s2_dev_lbl" value="พบอุปกรณ์ 2 เครื่อง" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;fontColor=#4b5563;" vertex="1" parent="1">
+      <mxGeometry x="322" y="360" width="160" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_dev1" value="● SoilSensor&#xa;A1:B2:C3:D4:E5:F6" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#86efac;align=left;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="322" y="382" width="162" height="38" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_dev1_chip" value="เชื่อมต่อแล้ว" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#052e16;strokeColor=#86efac;fontColor=#86efac;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="492" y="390" width="56" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_dev2" value="○ Unknown Device&#xa;F6:E5:D4:C3:B2:A1" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;align=left;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="322" y="428" width="162" height="38" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_dev2_btn" value="เชื่อมต่อ" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#16a34a;strokeColor=none;fontColor=#FFFFFF;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="492" y="436" width="56" height="22" as="geometry" />
+    </mxCell>
+
+    <!-- Warning box -->
+    <mxCell id="s2_warn" value="⚠️ หมายเหตุสำคัญ&#xa;ต้องเปิด Bluetooth และอนุญาตสิทธิ์ Location บนอุปกรณ์" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#422006;strokeColor=#92400e;fontColor=#fbbf24;fontSize=9;align=left;" vertex="1" parent="1">
+      <mxGeometry x="322" y="478" width="226" height="44" as="geometry" />
+    </mxCell>
+
+    <!-- Bottom Nav -->
+    <mxCell id="s2_nav" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="310" y="555" width="250" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_nav1" value="🌿&#xa;แดชบอร์ด" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="310" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_nav2" value="📡&#xa;สแกน" style="text;html=1;strokeColor=none;fillColor=#dcfce7;align=center;fontSize=9;fontColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="360" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_nav3" value="📊&#xa;ประวัติ" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="410" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_nav4" value="🗺️&#xa;แผนที่" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="460" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_nav5" value="⚙️&#xa;ตั้งค่า" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="510" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s2_label" value="2. Scan BLE" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=1;fontColor=#1B5E20;" vertex="1" parent="1">
+      <mxGeometry x="310" y="642" width="250" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SCREEN 3: History -->
+    <!-- ══════════════════════════════════════════════ -->
+    <mxCell id="s3_bg" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#BDBDBD;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="590" y="55" width="250" height="580" as="geometry" />
+    </mxCell>
+
+    <!-- Header -->
+    <mxCell id="s3_header" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="590" y="55" width="250" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_h_icon" value="📊" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=16;fontColor=#4ade80;" vertex="1" parent="1">
+      <mxGeometry x="602" y="62" width="28" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_h_title" value="ประวัติการวัด" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;fontColor=#f9fafb;" vertex="1" parent="1">
+      <mxGeometry x="634" y="62" width="110" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_h_count" value="19 รายการ" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="634" y="80" width="80" height="14" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_h_export" value="📥 ส่งออก Excel" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF26;strokeColor=none;fontColor=#FFFFFF;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="740" y="66" width="90" height="24" as="geometry" />
+    </mxCell>
+
+    <!-- Date range filter chips -->
+    <mxCell id="s3_f7" value="7 วัน" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#16a34a;strokeColor=none;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="602" y="122" width="48" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_f30" value="30 วัน" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontColor=#6b7280;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="656" y="122" width="48" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_f90" value="90 วัน" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontColor=#6b7280;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="710" y="122" width="48" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_fall" value="ทั้งหมด" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;fontColor=#6b7280;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="764" y="122" width="48" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- Location filter dropdown -->
+    <mxCell id="s3_loc_drop" value="📍 ทุกตำแหน่ง  ▼" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;align=left;fontSize=10;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="602" y="156" width="226" height="28" as="geometry" />
+    </mxCell>
+
+    <!-- View toggle tabs -->
+    <mxCell id="s3_tab_bg" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="602" y="192" width="226" height="34" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_tab_chart" value="📈 กราฟ" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=none;fontColor=#16a34a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="606" y="195" width="108" height="28" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_tab_table" value="📋 ตาราง" style="rounded=2;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontColor=#6b7280;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="716" y="195" width="108" height="28" as="geometry" />
+    </mxCell>
+
+    <!-- Chart area -->
+    <mxCell id="s3_chart_area" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="602" y="234" width="226" height="130" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_chart_txt" value="[ Line Chart — N / P / K / pH ]" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontColor=#BDBDBD;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="602" y="290" width="226" height="18" as="geometry" />
+    </mxCell>
+
+    <!-- History rows (table view preview) -->
+    <mxCell id="s3_row_hdr" value="วันที่  |  พืช  |  pH  |  N  |  P  |  K  |  ชื้น%" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#e5e7eb;align=left;fontSize=8;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="602" y="372" width="226" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_row1" value="02/03  |  ข้าว  |  6.8  |  45  |  32  |  28  |  42" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;align=left;fontSize=8;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="602" y="392" width="226" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_row2" value="01/03  |  ข้าวโพด  |  7.1  |  38  |  40  |  33  |  38" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#e5e7eb;align=left;fontSize=8;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="602" y="412" width="226" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_row3" value="28/02  |  ข้าว  |  6.5  |  50  |  30  |  25  |  45" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;align=left;fontSize=8;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="602" y="432" width="226" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_row_more" value="..." style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="602" y="452" width="226" height="16" as="geometry" />
+    </mxCell>
+
+    <!-- Bottom Nav -->
+    <mxCell id="s3_nav" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="590" y="555" width="250" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_nav1" value="🌿&#xa;แดชบอร์ด" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="590" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_nav2" value="📡&#xa;สแกน" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="640" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_nav3" value="📊&#xa;ประวัติ" style="text;html=1;strokeColor=none;fillColor=#dcfce7;align=center;fontSize=9;fontColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="690" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_nav4" value="🗺️&#xa;แผนที่" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="740" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_nav5" value="⚙️&#xa;ตั้งค่า" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="790" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s3_label" value="3. History (ประวัติการวัด)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=1;fontColor=#1B5E20;" vertex="1" parent="1">
+      <mxGeometry x="590" y="642" width="250" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SCREEN 4: Map -->
+    <!-- ══════════════════════════════════════════════ -->
+    <mxCell id="s4_bg" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#BDBDBD;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="870" y="55" width="250" height="580" as="geometry" />
+    </mxCell>
+
+    <!-- Header -->
+    <mxCell id="s4_header" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="870" y="55" width="250" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_h_icon" value="🗺️" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=16;fontColor=#4ade80;" vertex="1" parent="1">
+      <mxGeometry x="882" y="62" width="28" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_h_title" value="แผนที่จุดเก็บตัวอย่าง" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;fontColor=#f9fafb;" vertex="1" parent="1">
+      <mxGeometry x="914" y="62" width="160" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_h_sub" value="19 จุด" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="914" y="80" width="60" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- Map area (OSM tile — dark in dark mode) -->
+    <mxCell id="s4_map" value="[ OpenStreetMap Tile Layer ]&#xa;(สีมืดในโหมดมืดด้วย ColorFiltered invert)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d1e8c4;strokeColor=none;fontColor=#555;fontSize=9;fontStyle=2;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="870" y="110" width="250" height="270" as="geometry" />
+    </mxCell>
+
+    <!-- Markers on map -->
+    <mxCell id="s4_marker1" value="📍" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" vertex="1" parent="1">
+      <mxGeometry x="950" y="190" width="30" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_marker2" value="🟠" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;" vertex="1" parent="1">
+      <mxGeometry x="1010" y="220" width="24" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_marker3" value="📍" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" vertex="1" parent="1">
+      <mxGeometry x="990" y="260" width="30" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- Bottom sheet (draggable) -->
+    <mxCell id="s4_sheet" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="870" y="380" width="250" height="175" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_drag_handle" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#d1d5db;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="975" y="388" width="40" height="4" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_sheet_hdr" value="จุดเก็บตัวอย่าง (19)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=13;fontStyle=1;fontColor=#1f2937;" vertex="1" parent="1">
+      <mxGeometry x="882" y="400" width="160" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_sheet_div" value="" style="line;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="870" y="422" width="250" height="8" as="geometry" />
+    </mxCell>
+    <!-- Sheet list items -->
+    <mxCell id="s4_item1" value="📍 แปลง A — pH 6.8, N 45, P 32, K 28&#xa;🌾 ข้าว | ✂️ ผสม" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;align=left;fontSize=9;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="882" y="432" width="226" height="38" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_item2" value="📍 แปลง B — pH 7.1, N 38, P 40, K 33&#xa;🌽 ข้าวโพด | ✂️ เดี่ยว" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;align=left;fontSize=9;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="882" y="476" width="226" height="38" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_sheet_note" value="(ลากขึ้น/ลง เพื่อขยาย/ย่อ bottom sheet)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=8;fontColor=#9ca3af;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="870" y="518" width="250" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- Bottom Nav -->
+    <mxCell id="s4_nav" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="870" y="555" width="250" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_nav1" value="🌿&#xa;แดชบอร์ด" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="870" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_nav2" value="📡&#xa;สแกน" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="920" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_nav3" value="📊&#xa;ประวัติ" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="970" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_nav4" value="🗺️&#xa;แผนที่" style="text;html=1;strokeColor=none;fillColor=#dcfce7;align=center;fontSize=9;fontColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1020" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_nav5" value="⚙️&#xa;ตั้งค่า" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="1070" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s4_label" value="4. Map (แผนที่จุดเก็บตัวอย่าง)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=1;fontColor=#1B5E20;" vertex="1" parent="1">
+      <mxGeometry x="870" y="642" width="250" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SCREEN 5: Settings -->
+    <!-- ══════════════════════════════════════════════ -->
+    <mxCell id="s5_bg" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#BDBDBD;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="1150" y="55" width="250" height="580" as="geometry" />
+    </mxCell>
+
+    <!-- Header -->
+    <mxCell id="s5_header" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="1150" y="55" width="250" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_h_icon" value="⚙️" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=16;fontColor=#4ade80;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="62" width="28" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_h_title" value="ตั้งค่า" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;fontColor=#f9fafb;" vertex="1" parent="1">
+      <mxGeometry x="1194" y="62" width="80" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_h_sub" value="การตั้งค่าแอปพลิเคชัน" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="1194" y="80" width="130" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- Section: Bluetooth -->
+    <mxCell id="s5_sec1" value="Bluetooth (BLE)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="122" width="150" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_card" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="142" width="226" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_status_lbl" value="สถานะการเชื่อมต่อ" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="150" width="130" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_status_val" value="● เชื่อมต่อแล้ว" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#052e16;strokeColor=none;fontColor=#86efac;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1310" y="148" width="70" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_name_lbl" value="ชื่ออุปกรณ์" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="178" width="80" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_name_val" value="SoilSensor" style="text;html=1;strokeColor=none;fillColor=none;align=right;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1270" y="178" width="110" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_mac_lbl" value="MAC Address" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="202" width="80" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_mac_val" value="A1:B2:C3:D4:E5:F6" style="text;html=1;strokeColor=none;fillColor=none;align=right;fontSize=10;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1240" y="202" width="140" height="16" as="geometry" />
+    </mxCell>
+
+    <!-- Section: Display -->
+    <mxCell id="s5_sec2" value="การแสดงผล" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="244" width="120" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_disp_card" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="264" width="226" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_dark_lbl" value="โหมดมืด" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="274" width="80" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_dark_toggle" value="ON" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#22c55e;strokeColor=none;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="272" width="40" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- Section: App Info -->
+    <mxCell id="s5_sec3" value="ข้อมูลแอปพลิเคชัน" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="316" width="150" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_info_card" value="" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="336" width="226" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ver_lbl" value="เวอร์ชัน" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="344" width="80" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ver_val" value="1.0.0" style="text;html=1;strokeColor=none;fillColor=none;align=right;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1310" y="344" width="70" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_fw_lbl" value="Framework" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="368" width="80" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_fw_val" value="Flutter" style="text;html=1;strokeColor=none;fillColor=none;align=right;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1310" y="368" width="70" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_db_lbl" value="ฐานข้อมูล" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="392" width="80" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_db_val" value="Supabase (PostgreSQL)" style="text;html=1;strokeColor=none;fillColor=none;align=right;fontSize=10;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1240" y="392" width="140" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_lib_lbl" value="BLE Library" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9ca3af;" vertex="1" parent="1">
+      <mxGeometry x="1174" y="416" width="80" height="14" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ble_lib_val" value="flutter_blue_plus" style="text;html=1;strokeColor=none;fillColor=none;align=right;fontSize=10;fontColor=#374151;" vertex="1" parent="1">
+      <mxGeometry x="1270" y="416" width="110" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- Warning box -->
+    <mxCell id="s5_warn" value="⚠️ หมายเหตุสำคัญ&#xa;ต้องเปิด Bluetooth และอนุญาตสิทธิ์ Location บนอุปกรณ์&#xa;Android 6.0+ หรือ iOS 13+" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#422006;strokeColor=#92400e;fontColor=#fbbf24;fontSize=9;align=left;" vertex="1" parent="1">
+      <mxGeometry x="1162" y="436" width="226" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- Bottom Nav -->
+    <mxCell id="s5_nav" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#e5e7eb;" vertex="1" parent="1">
+      <mxGeometry x="1150" y="555" width="250" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_nav1" value="🌿&#xa;แดชบอร์ด" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="1150" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_nav2" value="📡&#xa;สแกน" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="1200" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_nav3" value="📊&#xa;ประวัติ" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="1250" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_nav4" value="🗺️&#xa;แผนที่" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#6b7280;" vertex="1" parent="1">
+      <mxGeometry x="1300" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_nav5" value="⚙️&#xa;ตั้งค่า" style="text;html=1;strokeColor=none;fillColor=#dcfce7;align=center;fontSize=9;fontColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1350" y="558" width="50" height="74" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s5_label" value="5. Settings (ตั้งค่า)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=1;fontColor=#1B5E20;" vertex="1" parent="1">
+      <mxGeometry x="1150" y="642" width="250" height="20" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>

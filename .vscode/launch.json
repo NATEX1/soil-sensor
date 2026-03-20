@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "SoilSensor (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define=SUPABASE_URL=https://lycndrnegjkohtaogabk.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=sb_publishable_DwW7X4D6hRnP2hj4hcQr6g_v9CZcOtk"
+      ]
+    },
+    {
+      "name": "SoilSensor (profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "toolArgs": [
+        "--dart-define=SUPABASE_URL=https://lycndrnegjkohtaogabk.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=sb_publishable_DwW7X4D6hRnP2hj4hcQr6g_v9CZcOtk"
+      ]
+    },
+    {
+      "name": "SoilSensor (release)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "toolArgs": [
+        "--dart-define=SUPABASE_URL=https://lycndrnegjkohtaogabk.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=sb_publishable_DwW7X4D6hRnP2hj4hcQr6g_v9CZcOtk"
+      ]
+    }
+  ]
+}
