@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/sensor_data.dart';
-import '../services/supabase_service.dart';
+import '../services/database_service.dart';
 
 class SaveModal extends StatefulWidget {
   final SensorData? sensorData;
@@ -69,7 +69,7 @@ class _SaveModalState extends State<SaveModal> {
       _error = null;
     });
     try {
-      await SupabaseService.saveMeasurement(
+      await DatabaseService.saveMeasurement(
         plantType: _plantType,
         sampleMethod: _sampleMethod,
         notes: _notesController.text.isEmpty ? null : _notesController.text,

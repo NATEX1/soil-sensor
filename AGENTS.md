@@ -3,7 +3,7 @@
 ## Project Overview
 
 **SoilSensor Flutter** - Smart soil analysis mobile app (iOS/Android) migrated from React Native.
-Uses Provider for state management, GoRouter for navigation, and Supabase for backend.
+Uses Provider for state management, GoRouter for navigation, and SQLite (sqflite) for local storage.
 
 ## Build Commands
 
@@ -11,10 +11,8 @@ Uses Provider for state management, GoRouter for navigation, and Supabase for ba
 # Install dependencies
 flutter pub get
 
-# Run development (requires Supabase credentials)
-flutter run \
-  --dart-define=SUPABASE_URL=https://xxx.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your_anon_key
+# Run development (no Supabase needed - uses local SQLite)
+flutter run
 
 # Analyze/lint code
 flutter analyze
@@ -150,9 +148,9 @@ lib/
 ## Key Dependencies
 | Package | Purpose |
 |---------|---------|
+| `sqflite` | Local SQLite database |
 | `provider` | State management |
 | `go_router` | Navigation |
-| `supabase_flutter` | Backend database |
 | `flutter_blue_plus` | BLE communication |
 | `flutter_map` | Map display |
 | `fl_chart` | Charts |
@@ -200,6 +198,19 @@ SoilStatus statusFromString(String s) =>
 <key>NSLocationWhenInUseUsageDescription</key>
 <string>ใช้ตำแหน่งเพื่อบันทึกพิกัดจุดเก็บตัวอย่าง</string>
 ```
+
+## Dashboard Requirements
+
+**CRITICAL**: The dashboard MUST show soil stats WITHOUT requiring BLE connection.
+
+Current behavior (WRONG): Shows "ยังไม่มีข้อมูลเซ็นเซอร์" when `ble.sensorData == null`
+Required behavior: Show recent measurements from `MeasurementsProvider` (Supabase history) when not connected
+
+Implementation approach:
+- When `ble.isConnected == false` and `ble.sensorData == null`, display recent measurements from `context.watch<MeasurementsProvider>().filteredMeasurements`
+- Show last saved measurement summary or "no saved measurements" state
+- BLE-connected data should still take priority when available
+- Use `MeasurementsProvider` which is already initialized in `main.dart` and fetches from Supabase
 
 ## Common Tasks
 

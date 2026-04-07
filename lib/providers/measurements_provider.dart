@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/sensor_data.dart';
-import '../services/supabase_service.dart';
+import '../services/database_service.dart';
 
 enum DateRange { d7, d30, d90 }
 
@@ -82,7 +82,7 @@ class MeasurementsProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _measurements =
-          await SupabaseService.getMeasurements(from: _dateRange.fromDate);
+          await DatabaseService.getMeasurements(from: _dateRange.fromDate);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -93,7 +93,7 @@ class MeasurementsProvider extends ChangeNotifier {
 
   Future<void> remove(String id) async {
     try {
-      await SupabaseService.deleteMeasurement(id);
+      await DatabaseService.deleteMeasurement(id);
       _measurements = _measurements.where((m) => m.id != id).toList();
       notifyListeners();
     } catch (e) {

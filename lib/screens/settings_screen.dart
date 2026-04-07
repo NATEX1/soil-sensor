@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/ble_service.dart';
+import '../services/database_service.dart';
+import '../providers/measurements_provider.dart';
 import '../providers/theme_provider.dart';
 
 const _green600 = Color(0xFF16a34a);
@@ -180,11 +182,39 @@ class SettingsScreen extends StatelessWidget {
                     Divider(height: 1, color: dividerColor),
                     _SettingsRow(label: 'Framework', value: 'Flutter'),
                     Divider(height: 1, color: dividerColor),
-                    _SettingsRow(
-                        label: 'ฐานข้อมูล', value: 'Supabase (PostgreSQL)'),
+                    _SettingsRow(label: 'ฐานข้อมูล', value: 'SQLite (sqflite)'),
                     Divider(height: 1, color: dividerColor),
                     _SettingsRow(
                         label: 'BLE Library', value: 'flutter_blue_plus'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Database Section
+                const _SectionLabel(label: 'ฐานข้อมูล'),
+                _SettingsCard(
+                  children: [
+                    ListTile(
+                      leading:
+                          const Icon(Icons.dataset, color: Color(0xFF16a34a)),
+                      title: const Text('เพิ่มข้อมูลตัวอย่าง 100 รายการ',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('สร้างข้อมูลจำลองสำหรับทดสอบ',
+                          style: TextStyle(fontSize: 12)),
+                      onTap: () => _seedData(context),
+                    ),
+                    Divider(height: 1, color: dividerColor),
+                    ListTile(
+                      leading: const Icon(Icons.delete_outline,
+                          color: Color(0xFFef4444)),
+                      title: const Text('ล้างข้อมูลทั้งหมด',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('ลบข้อมูลการวัดทั้งหมด',
+                          style: TextStyle(fontSize: 12)),
+                      onTap: () => _clearData(context),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -235,6 +265,72 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _seedData(BuildContext context) async {
+    try {
+      await DatabaseService.seedDummyData(count: 100);
+      if (context.mounted) {
+        context.read<MeasurementsProvider>().fetch();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('เพิ่มข้อมูลตัวอย่าง 100 รายการสำเร็จ'),
+              backgroundColor: Color(0xFF22c55e)),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('เกิดข้อผิดพลาด: $e'),
+              backgroundColor: const Color(0xFFef4444)),
+        );
+      }
+    }
+  }
+
+  Future<void> _clearData(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ล้างข้อมูลทั้งหมด'),
+        content: const Text(
+            'ต้องการลบข้อมูลการวัดทั้งหมดหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('ยกเลิก')),
+          FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFef4444)),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('ล้างข้อมูล')),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      try {
+        final db = await DatabaseService.database;
+        await db.delete('measurements');
+        if (context.mounted) {
+          context.read<MeasurementsProvider>().fetch();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('ล้างข้อมูลทั้งหมดสำเร็จ'),
+                backgroundColor: Color(0xFF22c55e)),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('เกิดข้อผิดพลาด: $e'),
+                backgroundColor: const Color(0xFFef4444)),
+          );
+        }
+      }
+    }
   }
 }
 

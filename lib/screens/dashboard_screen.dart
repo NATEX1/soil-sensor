@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/ble_service.dart';
+import '../providers/measurements_provider.dart';
 import '../widgets/sensor_card.dart';
 import '../widgets/save_modal.dart';
-import '../models/calculations.dart';
+import '../models/sensor_data.dart';
 
 const _green600 = Color(0xFF16a34a);
 
@@ -18,6 +19,20 @@ const _sensorKeys = [
   ('ec', 'EC', 'dS/m'),
   ('salinity', 'ความเค็ม', 'ppt'),
 ];
+
+class _DefaultSensorData extends SensorData {
+  const _DefaultSensorData()
+      : super(
+          ph: 0,
+          nitrogen: 0,
+          phosphorus: 0,
+          potassium: 0,
+          moisture: 0,
+          temperature: 0,
+          ec: 0,
+          salinity: 0,
+        );
+}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -35,9 +50,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
   }
 
+  SensorData _getActiveData(BleService ble, MeasurementsProvider measurements) {
+    if (ble.isConnected && ble.sensorData != null) {
+      return ble.sensorData!;
+    }
+    final saved = measurements.filteredMeasurements;
+    if (saved.isNotEmpty) {
+      return saved.first;
+    }
+    return const _DefaultSensorData();
+  }
+
+  bool get _hasRealData {
+    final ble = context.read<BleService>();
+    final measurements = context.read<MeasurementsProvider>();
+    if (ble.isConnected && ble.sensorData != null) return true;
+    return measurements.filteredMeasurements.isNotEmpty;
+  }
+
+  DateTime? _getActiveLastUpdate(
+      BleService ble, MeasurementsProvider measurements) {
+    if (ble.isConnected && ble.lastUpdate != null) {
+      return ble.lastUpdate;
+    }
+    final saved = measurements.filteredMeasurements;
+    if (saved.isNotEmpty && saved.first.measuredAt != null) {
+      return saved.first.measuredAt;
+    }
+    return ble.lastUpdate;
+  }
+
   @override
   Widget build(BuildContext context) {
     final ble = context.watch<BleService>();
+    final measurements = context.watch<MeasurementsProvider>();
+    final activeData = _getActiveData(ble, measurements);
+    final hasRealData = ble.isConnected && ble.sensorData != null ||
+        measurements.filteredMeasurements.isNotEmpty;
+    final activeLastUpdate = _getActiveLastUpdate(ble, measurements);
     final topPadding = MediaQuery.of(context).padding.top;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -196,12 +246,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 style:
                                     TextStyle(fontSize: 12, color: textMuted)),
                             const SizedBox(height: 2),
-                            Text(_formatLastUpdate(ble.lastUpdate),
+                            Text(_formatLastUpdate(activeLastUpdate),
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: textNormal)),
-                            if (!ble.isConnected && ble.sensorData != null) ...[
+                            if (!ble.isConnected && activeData != null) ...[
                               const SizedBox(height: 4),
                               Row(
                                 children: [
@@ -219,33 +269,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
 
                       // Sensor grid
-                      if (ble.sensorData != null) ...[
-                        Text('ค่าเซ็นเซอร์',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: textLabel)),
-                        const SizedBox(height: 8),
-                        GridView.count(
-                          crossAxisCount: 2,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 1.6,
-                          children: _sensorKeys.map((entry) {
-                            final (key, label, unit) = entry;
-                            return SensorCard(
-                              label: label,
-                              value: ble.sensorData![key],
-                              unit: unit,
-                              thresholdKey: key,
-                            );
-                          }).toList(),
-                        ),
-                      ] else ...[
+                      Text('ค่าเซ็นเซอร์',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: textLabel)),
+                      const SizedBox(height: 8),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1.6,
+                        children: _sensorKeys.map((entry) {
+                          final (key, label, unit) = entry;
+                          return SensorCard(
+                            label: label,
+                            value: activeData[key],
+                            unit: unit,
+                            thresholdKey: key,
+                          );
+                        }).toList(),
+                      ),
+                      if (!hasRealData) ...[
+                        const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(16),
@@ -253,14 +303,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.wifi_off, size: 40, color: iconMuted),
-                              const SizedBox(height: 12),
+                              Icon(Icons.bluetooth_searching,
+                                  size: 32, color: _green600),
+                              const SizedBox(height: 8),
                               Text(
-                                  'ยังไม่มีข้อมูลเซ็นเซอร์\nกรุณาเชื่อมต่ออุปกรณ์ก่อน',
+                                  'ยังไม่ได้เชื่อมต่ออุปกรณ์\nกรุณาไปที่หน้าสแกนเพื่อเชื่อมต่อกับ SoilSensor',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      color: textMuted, fontSize: 14)),
-                              const SizedBox(height: 16),
+                                      color: textMuted, fontSize: 13)),
+                              const SizedBox(height: 12),
                               FilledButton(
                                 onPressed: () => context.go('/scan'),
                                 style: FilledButton.styleFrom(
@@ -280,7 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Expanded(
                             child: FilledButton.icon(
-                              onPressed: ble.sensorData != null
+                              onPressed: activeData != null
                                   ? () =>
                                       setState(() => _saveModalVisible = true)
                                   : null,
@@ -300,13 +351,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: ble.sensorData != null
+                              onPressed: activeData != null
                                   ? () => context.push('/recommend')
                                   : null,
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: outlineBtn,
                                 side: BorderSide(
-                                    color: ble.sensorData != null
+                                    color: activeData != null
                                         ? outlineBtn
                                         : borderColor),
                                 padding:
@@ -337,7 +388,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           if (_saveModalVisible)
             SaveModal(
-              sensorData: ble.sensorData,
+              sensorData: activeData,
               onClose: () => setState(() => _saveModalVisible = false),
               onSaved: () => setState(() => _saveModalVisible = false),
             ),

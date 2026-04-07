@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'env.dart';
 import 'services/ble_service.dart';
 import 'services/wifi_service.dart';
 import 'providers/measurements_provider.dart';
@@ -22,8 +20,6 @@ Future<void> main() async {
     statusBarColor: Color(0xFF16a34a),
     statusBarIconBrightness: Brightness.light,
   ));
-
-  await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
 
   runApp(
     MultiProvider(
