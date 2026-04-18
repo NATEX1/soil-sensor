@@ -85,6 +85,14 @@ class MeasurementRecord extends SensorData {
   final String? notes;
   final double lat;
   final double lng;
+  final String? pointName;
+  final String? customPlant;
+
+  /// Display-friendly plant name: uses customPlant when plantType is 'other'
+  String get plantLabel =>
+      plantType == PlantType.other && customPlant != null && customPlant!.isNotEmpty
+          ? customPlant!
+          : plantTypeLabels[plantType] ?? 'อื่นๆ';
 
   const MeasurementRecord({
     this.id,
@@ -93,6 +101,8 @@ class MeasurementRecord extends SensorData {
     required this.plantType,
     required this.sampleMethod,
     this.notes,
+    this.pointName,
+    this.customPlant,
     required this.lat,
     required this.lng,
     required super.ph,
@@ -113,6 +123,8 @@ class MeasurementRecord extends SensorData {
       plantType: plantTypeFromString(json['plant_type'] as String? ?? 'other'),
       sampleMethod: sampleMethodFromString(json['sample_method'] as String? ?? 'surface_0_15'),
       notes: json['notes'] as String?,
+      pointName: json['point_name'] as String?,
+      customPlant: json['custom_plant'] as String?,
       lat: (json['lat'] as num?)?.toDouble() ?? 0,
       lng: (json['lng'] as num?)?.toDouble() ?? 0,
       ph: (json['ph'] as num).toDouble(),
@@ -133,6 +145,8 @@ class MeasurementRecord extends SensorData {
     'plant_type': plantTypeValues[plantType],
     'sample_method': sampleMethodValues[sampleMethod],
     if (notes != null) 'notes': notes,
+    if (pointName != null) 'point_name': pointName,
+    if (customPlant != null) 'custom_plant': customPlant,
     'lat': lat,
     'lng': lng,
     'ph': ph,

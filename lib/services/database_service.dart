@@ -25,7 +25,9 @@ class DatabaseService {
       moisture REAL NOT NULL,
       temperature REAL NOT NULL,
       ec REAL NOT NULL,
-      salinity REAL NOT NULL
+      salinity REAL NOT NULL,
+      point_name TEXT,
+      custom_plant TEXT
     )
   ''';
 
@@ -40,9 +42,17 @@ class DatabaseService {
     final path = join(dbPath, 'soil_sensor.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute(_createTable);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE $_tableName ADD COLUMN point_name TEXT');
+        }
+        if (oldVersion < 3) {
+          await db.execute('ALTER TABLE $_tableName ADD COLUMN custom_plant TEXT');
+        }
       },
     );
   }
@@ -51,6 +61,8 @@ class DatabaseService {
     required PlantType plantType,
     required SampleMethod sampleMethod,
     String? notes,
+    String? pointName,
+    String? customPlant,
     required double lat,
     required double lng,
     required double ph,
@@ -76,6 +88,8 @@ class DatabaseService {
         'plant_type': plantTypeStr,
         'sample_method': sampleMethodStr,
         'notes': notes,
+        'point_name': pointName,
+        'custom_plant': customPlant,
         'lat': lat,
         'lng': lng,
         'ph': ph,
@@ -95,6 +109,8 @@ class DatabaseService {
       plantType: plantType,
       sampleMethod: sampleMethod,
       notes: notes,
+      pointName: pointName,
+      customPlant: customPlant,
       lat: lat,
       lng: lng,
       ph: ph,
@@ -153,6 +169,8 @@ class DatabaseService {
       plantType: plantTypeFromString(row['plant_type'] as String),
       sampleMethod: sampleMethodFromString(row['sample_method'] as String),
       notes: row['notes'] as String?,
+      pointName: row['point_name'] as String?,
+      customPlant: row['custom_plant'] as String?,
       lat: (row['lat'] as num).toDouble(),
       lng: (row['lng'] as num).toDouble(),
       ph: (row['ph'] as num).toDouble(),

@@ -160,7 +160,9 @@ class MapBottomSheet extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        plantTypeLabels[m.plantType] ?? '',
+                                        m.pointName?.isNotEmpty == true
+                                            ? m.pointName!
+                                            : (plantTypeLabels[m.plantType] ?? ''),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
@@ -176,9 +178,7 @@ class MapBottomSheet extends StatelessWidget {
                                           ),
                                         ),
                                       Text(
-                                        m.notes?.isNotEmpty == true
-                                            ? m.notes!
-                                            : context.watch<MeasurementsProvider>().getLocationName('${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}'),
+                                        context.watch<MeasurementsProvider>().getLocationName('${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}'),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(

@@ -23,6 +23,8 @@ class _SaveModalState extends State<SaveModal> {
   PlantType _plantType = PlantType.rice;
   SampleMethod _sampleMethod = SampleMethod.surface0_15;
   final _notesController = TextEditingController();
+  final _pointNameController = TextEditingController();
+  final _customPlantController = TextEditingController();
   double? _lat;
   double? _lng;
   bool _saving = false;
@@ -38,6 +40,8 @@ class _SaveModalState extends State<SaveModal> {
   @override
   void dispose() {
     _notesController.dispose();
+    _pointNameController.dispose();
+    _customPlantController.dispose();
     super.dispose();
   }
 
@@ -73,6 +77,10 @@ class _SaveModalState extends State<SaveModal> {
       await DatabaseService.saveMeasurement(
         plantType: _plantType,
         sampleMethod: _sampleMethod,
+        pointName: _pointNameController.text.isEmpty ? null : _pointNameController.text,
+        customPlant: _plantType == PlantType.other && _customPlantController.text.isNotEmpty
+            ? _customPlantController.text
+            : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         lat: _lat ?? 0,
         lng: _lng ?? 0,
@@ -163,6 +171,33 @@ class _SaveModalState extends State<SaveModal> {
                         ],
                       ),
                     ),
+                  Text('ชื่อจุดเก็บตัวอย่าง',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textNormal)),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _pointNameController,
+                    style: TextStyle(fontSize: 14, color: context.colors.textNormal),
+                    decoration: InputDecoration(
+                      hintText: 'เช่น จุดที่ 1 หรือ จุด A',
+                      hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+                      filled: true,
+                      fillColor: context.colors.cardBg,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.5))),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text('ชนิดพืช',
                       style: TextStyle(
                           fontSize: 13,
@@ -194,6 +229,38 @@ class _SaveModalState extends State<SaveModal> {
                         ),
                       );
                     }).toList(),
+                  ),
+                  // Custom plant name field (shown when 'อื่นๆ' is selected)
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: _plantType == PlantType.other
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: TextField(
+                              controller: _customPlantController,
+                              style: TextStyle(fontSize: 14, color: context.colors.textNormal),
+                              decoration: InputDecoration(
+                                hintText: 'ระบุชื่อพืช เช่น มะม่วง, ทุเรียน',
+                                hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+                                prefixIcon: Icon(Icons.eco_outlined,
+                                    size: 18, color: context.colors.primaryBtn),
+                                filled: true,
+                                fillColor: context.colors.cardBg,
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none),
+                                enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.3))),
+                                focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.6))),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 24),
                   Text('วิธีเก็บตัวอย่าง',

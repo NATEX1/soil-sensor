@@ -53,11 +53,27 @@ class HistoryTableView extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      date != null
-                          ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}'
-                          : '--',
-                      style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (m.pointName?.isNotEmpty == true)
+                          Text(
+                            m.pointName!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: context.colors.textNormal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        Text(
+                          date != null
+                              ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}'
+                              : '--',
+                          style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                        ),
+                      ],
                     ),
                   ),
                   SizedBox(
