@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/sensor_data.dart';
 import '../services/database_service.dart';
+import '../theme/app_colors.dart';
 
 class SaveModal extends StatefulWidget {
   final SensorData? sensorData;
@@ -94,89 +95,80 @@ class _SaveModalState extends State<SaveModal> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Theme-aware colors
-    final sheetBg = isDark ? const Color(0xFF1f2937) : Colors.white;
-    final dragHandleColor =
-        isDark ? const Color(0xFF6b7280) : Colors.grey[300]!;
-    final textTitle =
-        isDark ? const Color(0xFFf3f4f6) : const Color(0xFF1f2937);
-    final textLabel =
-        isDark ? const Color(0xFFd1d5db) : const Color(0xFF6b7280);
-    final textValue =
-        isDark ? const Color(0xFFe5e7eb) : const Color(0xFF374151);
-    final primaryBtn =
-        isDark ? const Color(0xFF16a34a) : const Color(0xFF16a34a);
-    final cardBg = isDark ? const Color(0xFF111827) : const Color(0xFFf9fafb);
-    final borderColor =
-        isDark ? const Color(0xFF374151) : const Color(0xFFe5e7eb);
-    final errorBg = isDark ? const Color(0xFF450a0a) : const Color(0xFFfef2f2);
-    final errorBorder =
-        isDark ? const Color(0xFF991b1b) : const Color(0xFFfecaca);
-    final errorText =
-        isDark ? const Color(0xFFfca5a5) : const Color(0xFFb91c1c);
-    final inputBorder =
-        isDark ? const Color(0xFF374151) : const Color(0xFFe5e7eb);
-    final chipUnselectedBg = isDark ? const Color(0xFF374151) : Colors.white;
-
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       maxChildSize: 0.95,
       minChildSize: 0.5,
       builder: (_, controller) => Container(
         decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: dragHandleColor,
+                    color: context.colors.textMuted.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('บันทึกผลการวัด',
                       style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: textTitle)),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: context.colors.textNormal)),
                   IconButton(
-                      onPressed: widget.onClose, icon: const Icon(Icons.close)),
+                      onPressed: widget.onClose,
+                      icon: Icon(Icons.close, color: context.colors.textMuted)),
                 ],
               ),
             ),
-            const Divider(height: 1),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
+                physics: const BouncingScrollPhysics(),
                 controller: controller,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 children: [
                   if (_error != null)
                     Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                          color: errorBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: errorBorder)),
-                      child: Text(_error!,
-                          style: TextStyle(color: errorText, fontSize: 13)),
+                          color: context.colors.errorBg,
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, size: 16, color: context.colors.errorText),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(_error!,
+                                style: TextStyle(color: context.colors.errorText, fontSize: 13)),
+                          ),
+                        ],
+                      ),
                     ),
                   Text('ชนิดพืช',
                       style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: textLabel)),
-                  const SizedBox(height: 8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textNormal)),
+                  const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -184,85 +176,108 @@ class _SaveModalState extends State<SaveModal> {
                       final selected = _plantType == pt;
                       return GestureDetector(
                         onTap: () => setState(() => _plantType = pt),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: selected ? primaryBtn : chipUnselectedBg,
+                            color: selected ? context.colors.primaryBtn : context.colors.cardBg,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: selected ? primaryBtn : borderColor),
+                                color: selected ? context.colors.primaryBtn : context.colors.borderColor.withValues(alpha: 0.5)),
                           ),
                           child: Text(plantTypeLabels[pt]!,
                               style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: selected ? Colors.white : textValue)),
+                                  color: selected ? Colors.white : context.colors.textMuted)),
                         ),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   Text('วิธีเก็บตัวอย่าง',
                       style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: textLabel)),
-                  const SizedBox(height: 8),
-                  ...SampleMethod.values.map((sm) =>
-                      RadioListTile<SampleMethod>(
-                        value: sm,
-                        groupValue: _sampleMethod,
-                        onChanged: (v) => setState(() => _sampleMethod = v!),
-                        title: Text(sampleMethodLabels[sm]!,
-                            style: TextStyle(fontSize: 14, color: textValue)),
-                        activeColor: primaryBtn,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      )),
-                  const SizedBox(height: 16),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textNormal)),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: context.colors.cardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: RadioGroup<SampleMethod>(
+                      groupValue: _sampleMethod,
+                      onChanged: (v) => setState(() => _sampleMethod = v!),
+                      child: Column(
+                        children: SampleMethod.values.map((sm) =>
+                          RadioListTile<SampleMethod>(
+                            value: sm,
+                            title: Text(sampleMethodLabels[sm]!,
+                                style: TextStyle(fontSize: 14, color: context.colors.textNormal)),
+                            activeColor: context.colors.primaryBtn,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                            dense: true,
+                          ),
+                        ).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text('หมายเหตุ',
                       style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: textLabel)),
-                  const SizedBox(height: 8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textNormal)),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _notesController,
                     maxLines: 3,
+                    style: TextStyle(fontSize: 14, color: context.colors.textNormal),
                     decoration: InputDecoration(
                       hintText: 'บันทึกเพิ่มเติม...',
+                      hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+                      filled: true,
+                      fillColor: context.colors.cardBg,
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: inputBorder)),
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: inputBorder)),
-                      contentPadding: const EdgeInsets.all(12),
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.5))),
+                      contentPadding: const EdgeInsets.all(16),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderColor)),
+                        color: context.colors.cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5))),
                     child: Row(
                       children: [
-                        Icon(Icons.location_on, size: 16, color: textLabel),
-                        const SizedBox(width: 6),
-                        _locating
-                            ? Text('กำลังระบุตำแหน่ง...',
-                                style:
-                                    TextStyle(fontSize: 13, color: textLabel))
-                            : Text(
-                                _lat != null
-                                    ? '${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}'
-                                    : 'ไม่สามารถระบุตำแหน่งได้',
-                                style:
-                                    TextStyle(fontSize: 13, color: textValue),
-                              ),
+                        Icon(Icons.location_on_outlined, size: 18, color: context.colors.textMuted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _locating
+                              ? Text('กำลังระบุตำแหน่ง...',
+                                  style:
+                                      TextStyle(fontSize: 13, color: context.colors.textMuted))
+                              : Text(
+                                  _lat != null
+                                      ? '${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}'
+                                      : 'ไม่สามารถระบุตำแหน่งได้',
+                                  style:
+                                      TextStyle(fontSize: 13, color: context.colors.textNormal),
+                                ),
+                        ),
                       ],
                     ),
                   ),
@@ -273,10 +288,12 @@ class _SaveModalState extends State<SaveModal> {
                         child: OutlinedButton(
                           onPressed: widget.onClose,
                           style: OutlinedButton.styleFrom(
+                              foregroundColor: context.colors.textNormal,
+                              side: BorderSide(color: context.colors.borderColor),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14))),
-                          child: const Text('ยกเลิก'),
+                          child: const Text('ยกเลิก', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -284,7 +301,7 @@ class _SaveModalState extends State<SaveModal> {
                         child: FilledButton(
                           onPressed: _saving ? null : _save,
                           style: FilledButton.styleFrom(
-                            backgroundColor: primaryBtn,
+                            backgroundColor: context.colors.primaryBtn,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),

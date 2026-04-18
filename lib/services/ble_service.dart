@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/sensor_data.dart';
@@ -14,22 +15,28 @@ class BleService extends ChangeNotifier {
   StreamSubscription<List<ScanResult>>? _scanSubscription;
   StreamSubscription<BluetoothConnectionState>? _connectionSubscription;
   StreamSubscription<List<int>>? _notifySubscription;
+  Timer? _demoTimer;
 
   final List<BluetoothDevice> _foundDevices = [];
   bool _isScanning = false;
+  bool _isDemoMode = false;
   SensorData? _sensorData;
   DateTime? _lastUpdate;
   String? _error;
 
   List<BluetoothDevice> get foundDevices => List.unmodifiable(_foundDevices);
   bool get isScanning => _isScanning;
-  bool get isConnected => _connectedDevice != null;
+  bool get isDemoMode => _isDemoMode;
+  bool get isConnected => _connectedDevice != null || _isDemoMode;
   BluetoothDevice? get connectedDevice => _connectedDevice;
   SensorData? get sensorData => _sensorData;
   DateTime? get lastUpdate => _lastUpdate;
   String? get error => _error;
 
   Future<void> startScan() async {
+    if (_isDemoMode) {
+      await disconnect();
+    }
     _foundDevices.clear();
     _error = null;
     _isScanning = true;
@@ -131,6 +138,15 @@ class BleService extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    if (_isDemoMode) {
+      _isDemoMode = false;
+      _demoTimer?.cancel();
+      _demoTimer = null;
+      _sensorData = null;
+      notifyListeners();
+      return;
+    }
+
     try {
       await _notifySubscription?.cancel();
       await _connectionSubscription?.cancel();
@@ -141,11 +157,47 @@ class BleService extends ChangeNotifier {
     }
   }
 
+  void startDemoMode() {
+    _isDemoMode = true;
+    _connectedDevice = null;
+    _error = null;
+    _isScanning = false;
+    _scanSubscription?.cancel();
+    
+    _updateDemoData();
+    
+    _demoTimer?.cancel();
+    _demoTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _updateDemoData();
+    });
+    
+    notifyListeners();
+  }
+
+  void _updateDemoData() {
+    final random = Random();
+    final ec = 1000.0 + random.nextDouble() * 500.0;
+    
+    _sensorData = SensorData(
+      ph: 6.0 + random.nextDouble() * 1.5,
+      nitrogen: 40.0 + random.nextDouble() * 20.0,
+      phosphorus: 20.0 + random.nextDouble() * 10.0,
+      potassium: 30.0 + random.nextDouble() * 15.0,
+      moisture: 40.0 + random.nextDouble() * 20.0,
+      temperature: 25.0 + random.nextDouble() * 5.0,
+      ec: ec,
+      salinity: calculateSalinity(ec),
+    );
+    _lastUpdate = DateTime.now();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _scanSubscription?.cancel();
     _connectionSubscription?.cancel();
     _notifySubscription?.cancel();
+    _demoTimer?.cancel();
     super.dispose();
   }
 }

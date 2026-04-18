@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/sensor_data.dart';
 import '../services/database_service.dart';
+import '../services/geocoding_service.dart';
 
 enum DateRange { d7, d30, d90 }
 
@@ -35,12 +36,15 @@ class MeasurementsProvider extends ChangeNotifier {
   String? _error;
   DateRange _dateRange = DateRange.d30;
   String? _selectedLocation;
+  final Map<String, String> _locationNames = {};
 
   List<MeasurementRecord> get measurements => _measurements;
   bool get loading => _loading;
   String? get error => _error;
   DateRange get dateRange => _dateRange;
   String? get selectedLocation => _selectedLocation;
+  
+  String getLocationName(String locKey) => _locationNames[locKey] ?? locKey;
 
   List<String> get uniqueLocations {
     final locations = _measurements
@@ -83,11 +87,26 @@ class MeasurementsProvider extends ChangeNotifier {
     try {
       _measurements =
           await DatabaseService.getMeasurements(from: _dateRange.fromDate);
+      _resolveLocationNames();
     } catch (e) {
       _error = e.toString();
     } finally {
       _loading = false;
       notifyListeners();
+    }
+  }
+
+  void _resolveLocationNames() async {
+    for (final loc in uniqueLocations) {
+      if (_locationNames.containsKey(loc)) continue;
+      try {
+        final parts = loc.split(', ');
+        final lat = double.parse(parts[0]);
+        final lng = double.parse(parts[1]);
+        final address = await GeocodingService.getAddress(lat, lng);
+        _locationNames[loc] = address;
+        notifyListeners();
+      } catch (_) {}
     }
   }
 

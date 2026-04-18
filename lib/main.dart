@@ -7,7 +7,7 @@ import 'services/wifi_service.dart';
 import 'providers/measurements_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/scan_screen.dart';
+
 import 'screens/history_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/settings_screen.dart';
@@ -17,8 +17,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Color(0xFF16a34a),
-    statusBarIconBrightness: Brightness.light,
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
   ));
 
   runApp(
@@ -34,6 +34,17 @@ Future<void> main() async {
   );
 }
 
+// Fade transition for sub-pages
+CustomTransitionPage<void> _fadePage(Widget child, GoRouterState state) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 250),
+    transitionsBuilder: (_, animation, __, child) =>
+        FadeTransition(opacity: animation, child: child),
+  );
+}
+
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -43,9 +54,6 @@ final _router = GoRouter(
       branches: [
         StatefulShellBranch(routes: [
           GoRoute(path: '/', builder: (_, __) => const DashboardScreen())
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/scan', builder: (_, __) => const ScanScreen())
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/history', builder: (_, __) => const HistoryScreen())
@@ -58,7 +66,10 @@ final _router = GoRouter(
         ]),
       ],
     ),
-    GoRoute(path: '/recommend', builder: (_, __) => const RecommendScreen()),
+    GoRoute(
+      path: '/recommend',
+      pageBuilder: (_, state) => _fadePage(const RecommendScreen(), state),
+    ),
   ],
 );
 
@@ -79,6 +90,12 @@ class SoilSensorApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: const Color(0xFFf9fafb),
         cardColor: Colors.white,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
@@ -95,6 +112,12 @@ class SoilSensorApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: const Color(0xFF111827),
         cardColor: const Color(0xFF1f2937),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
       routerConfig: _router,
     );
@@ -107,62 +130,57 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          navigationBarTheme: NavigationBarThemeData(
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return IconThemeData(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : const Color(0xFF16a34a),
-                );
-              }
-              return IconThemeData(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF9ca3af)
-                    : const Color(0xFF6b7280),
-              );
-            }),
-          ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: navigationShell,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) => navigationShell.goBranch(
+          index,
+          initialLocation: index == navigationShell.currentIndex,
         ),
-        child: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) => navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
+        backgroundColor: isDark ? const Color(0xFF1f2937) : Colors.white,
+        indicatorColor: isDark ? const Color(0xFF14532d) : const Color(0xFFdcfce7),
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        height: 64,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        animationDuration: const Duration(milliseconds: 300),
+        destinations: [
+          NavigationDestination(
+            icon: Icon(Icons.eco_outlined,
+                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
+            selectedIcon: Icon(Icons.eco,
+                color: isDark ? Colors.white : const Color(0xFF16a34a)),
+            label: 'แดชบอร์ด',
           ),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF1f2937)
-              : Colors.white,
-          indicatorColor: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF14532d)
-              : const Color(0xFFdcfce7),
-          destinations: const [
-            NavigationDestination(
-                icon: Icon(Icons.eco_outlined),
-                selectedIcon: Icon(Icons.eco),
-                label: 'แดชบอร์ด'),
-            NavigationDestination(
-                icon: Icon(Icons.bluetooth_searching),
-                selectedIcon: Icon(Icons.bluetooth_connected),
-                label: 'สแกน'),
-            NavigationDestination(
-                icon: Icon(Icons.bar_chart_outlined),
-                selectedIcon: Icon(Icons.bar_chart),
-                label: 'ประวัติ'),
-            NavigationDestination(
-                icon: Icon(Icons.map_outlined),
-                selectedIcon: Icon(Icons.map),
-                label: 'แผนที่'),
-            NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: 'ตั้งค่า'),
-          ],
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined,
+                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
+            selectedIcon: Icon(Icons.bar_chart,
+                color: isDark ? Colors.white : const Color(0xFF16a34a)),
+            label: 'ประวัติ',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined,
+                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
+            selectedIcon: Icon(Icons.map,
+                color: isDark ? Colors.white : const Color(0xFF16a34a)),
+            label: 'แผนที่',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined,
+                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
+            selectedIcon: Icon(Icons.settings,
+                color: isDark ? Colors.white : const Color(0xFF16a34a)),
+            label: 'ตั้งค่า',
+          ),
+        ],
       ),
     );
   }

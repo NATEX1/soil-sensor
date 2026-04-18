@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/sensor_data.dart';
 import '../models/calculations.dart';
+import '../theme/app_colors.dart';
 
 class SensorCard extends StatelessWidget {
   final String label;
@@ -21,13 +22,18 @@ class SensorCard extends StatelessWidget {
     final status = getSoilStatus(thresholdKey, value);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final config = _statusConfig(status, isDark);
+    final valueText = unit.isEmpty
+        ? value.toStringAsFixed(1)
+        : '${value.toStringAsFixed(1)} $unit';
 
-    return Container(
-      padding: const EdgeInsets.all(12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: config.bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: config.border),
+        border: Border.all(color: config.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,37 +41,76 @@ class SensorCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6b7280), fontWeight: FontWeight.w500)),
-              _StatusIcon(status: status),
+              Flexible(
+                child: Text(label,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: context.colors.textMuted,
+                        fontWeight: FontWeight.w500)),
+              ),
+              _StatusDot(status: status),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            unit.isEmpty ? value.toStringAsFixed(1) : '${value.toStringAsFixed(1)} $unit',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: config.text),
+          const SizedBox(height: 8),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.2),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOut,
+                )),
+                child: child,
+              ),
+            ),
+            child: Text(
+              valueText,
+              key: ValueKey(valueText),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: config.text,
+                  letterSpacing: -0.3),
+            ),
           ),
-          const SizedBox(height: 2),
-          Text(statusLabels[status]!, style: TextStyle(fontSize: 11, color: config.text)),
+          const Spacer(),
+          Text(statusLabels[status]!,
+              style: TextStyle(
+                  fontSize: 10,
+                  color: config.text.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 }
 
-class _StatusIcon extends StatelessWidget {
+class _StatusDot extends StatelessWidget {
   final SoilStatus status;
-  const _StatusIcon({required this.status});
+  const _StatusDot({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    switch (status) {
-      case SoilStatus.low:
-        return const Icon(Icons.arrow_downward, size: 16, color: Color(0xFF2563eb));
-      case SoilStatus.normal:
-        return const Icon(Icons.check_circle, size: 16, color: Color(0xFF16a34a));
-      case SoilStatus.high:
-        return const Icon(Icons.arrow_upward, size: 16, color: Color(0xFFdc2626));
-    }
+    final (color, icon) = switch (status) {
+      SoilStatus.low => (const Color(0xFF3b82f6), Icons.arrow_downward),
+      SoilStatus.normal => (const Color(0xFF16a34a), Icons.check_circle),
+      SoilStatus.high => (const Color(0xFFef4444), Icons.arrow_upward),
+    };
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 12, color: color),
+    );
   }
 }
 
@@ -80,15 +125,15 @@ _StatusConfig _statusConfig(SoilStatus status, bool isDark) {
   switch (status) {
     case SoilStatus.low:
       return isDark
-          ? _StatusConfig(bg: const Color(0xFF1e3a5f), border: const Color(0xFF2563eb), text: const Color(0xFF93c5fd))
-          : _StatusConfig(bg: const Color(0xFFeff6ff), border: const Color(0xFFbfdbfe), text: const Color(0xFF1d4ed8));
+          ? const _StatusConfig(bg: Color(0xFF1e293b), border: Color(0xFF334155), text: Color(0xFF93c5fd))
+          : const _StatusConfig(bg: Color(0xFFf0f7ff), border: Color(0xFFdbeafe), text: Color(0xFF1d4ed8));
     case SoilStatus.normal:
       return isDark
-          ? _StatusConfig(bg: const Color(0xFF14532d), border: const Color(0xFF16a34a), text: const Color(0xFF86efac))
-          : _StatusConfig(bg: const Color(0xFFf0fdf4), border: const Color(0xFFbbf7d0), text: const Color(0xFF15803d));
+          ? const _StatusConfig(bg: Color(0xFF14201a), border: Color(0xFF1a3a2a), text: Color(0xFF86efac))
+          : const _StatusConfig(bg: Color(0xFFf0fdf4), border: Color(0xFFdcfce7), text: Color(0xFF15803d));
     case SoilStatus.high:
       return isDark
-          ? _StatusConfig(bg: const Color(0xFF7f1d1d), border: const Color(0xFFdc2626), text: const Color(0xFFfca5a5))
-          : _StatusConfig(bg: const Color(0xFFfef2f2), border: const Color(0xFFfecaca), text: const Color(0xFFb91c1c));
+          ? const _StatusConfig(bg: Color(0xFF271515), border: Color(0xFF3f1a1a), text: Color(0xFFfca5a5))
+          : const _StatusConfig(bg: Color(0xFFfef7f7), border: Color(0xFFfee2e2), text: Color(0xFFb91c1c));
   }
 }

@@ -129,9 +129,9 @@ class _SoilChartState extends State<SoilChart> {
                       ),
                       titlesData: FlTitlesData(
                         leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 36, getTitlesWidget: (v, _) => Text(v.toStringAsFixed(1), style: TextStyle(fontSize: 9, color: textMuted)))),
-                        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       ),
                       borderData: FlBorderData(show: false),
                       lineBarsData: [
@@ -143,7 +143,7 @@ class _SoilChartState extends State<SoilChart> {
                           dotData: FlDotData(
                             getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(radius: 4, color: color, strokeWidth: 2, strokeColor: isDark ? const Color(0xFF1f2937) : Colors.white),
                           ),
-                          belowBarData: BarAreaData(show: true, color: color.withOpacity(0.08)),
+                          belowBarData: BarAreaData(show: true, color: color.withValues(alpha: 0.08)),
                         ),
                       ],
                     ),
