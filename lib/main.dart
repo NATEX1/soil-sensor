@@ -12,6 +12,8 @@ import 'screens/history_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/recommend_screen.dart';
+import 'screens/settings/plants_management_screen.dart';
+import 'models/sensor_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,14 +36,19 @@ Future<void> main() async {
   );
 }
 
-// Fade transition for sub-pages
-CustomTransitionPage<void> _fadePage(Widget child, GoRouterState state) {
+// Slide transition for sub-pages (from Right to Left)
+CustomTransitionPage<void> _slidePage(Widget child, GoRouterState state) {
   return CustomTransitionPage(
     key: state.pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 250),
-    transitionsBuilder: (_, animation, __, child) =>
-        FadeTransition(opacity: animation, child: child),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionsBuilder: (_, animation, __, child) {
+      const begin = Offset(1.0, 0.0);
+      const end = Offset.zero;
+      const curve = Curves.easeOutCubic;
+      final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      return SlideTransition(position: animation.drive(tween), child: child);
+    },
   );
 }
 
@@ -68,7 +75,14 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/recommend',
-      pageBuilder: (_, state) => _fadePage(const RecommendScreen(), state),
+      pageBuilder: (_, state) => _slidePage(
+        RecommendScreen(record: state.extra as MeasurementRecord?),
+        state,
+      ),
+    ),
+    GoRoute(
+      path: '/settings/plants',
+      pageBuilder: (_, state) => _slidePage(const PlantsManagementScreen(), state),
     ),
   ],
 );
@@ -92,7 +106,7 @@ class SoilSensorApp extends StatelessWidget {
         cardColor: Colors.white,
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           },
         ),
@@ -114,7 +128,7 @@ class SoilSensorApp extends StatelessWidget {
         cardColor: const Color(0xFF1f2937),
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           },
         ),

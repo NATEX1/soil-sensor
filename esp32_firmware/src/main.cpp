@@ -14,7 +14,7 @@ ModbusMaster node;
 
 // การตั้งค่า BLE Service ตรงกับ Flutter App
 #define SERVICE_UUID        "12345678-1234-1234-1234-123456789abc"
-#define CHARACTERISTIC_UUID "abcd1234-ab12-ab12-ab12-abcdef123456"
+#define CHARACTERISTIC_UUID "abcd1234-ab12-ab12-ab12-abcdef124356"
 
 NimBLEServer* pServer = NULL;
 NimBLECharacteristic* pCharacteristic = NULL;

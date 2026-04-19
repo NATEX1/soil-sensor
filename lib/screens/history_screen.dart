@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/measurements_provider.dart';
 import '../widgets/common/error_card.dart';
-import '../widgets/history/history_table_view.dart';
+import '../widgets/history/history_list_view.dart';
 import '../theme/app_colors.dart';
 import '../widgets/soil_chart.dart';
 
@@ -161,8 +161,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               setState(() => _activeTab = _ViewTab.chart),
                         ),
                         _TabButton(
-                          label: 'ตาราง',
-                          icon: Icons.table_chart_outlined,
+                          label: 'รายการ',
+                          icon: Icons.list_alt_rounded,
                           selected: _activeTab == _ViewTab.table,
                           onTap: () =>
                               setState(() => _activeTab = _ViewTab.table),
@@ -201,7 +201,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   else if (_activeTab == _ViewTab.chart)
                     SoilChart(measurements: provider.filteredMeasurements)
                   else
-                    HistoryTableView(measurements: provider.filteredMeasurements),
+                    HistoryListView(measurements: provider.filteredMeasurements),
           ],
         ),
       ),
@@ -238,7 +238,7 @@ class _TabButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? context.colors.cardBg : Colors.transparent,
+            color: selected ? context.colors.tabSelectedBg : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

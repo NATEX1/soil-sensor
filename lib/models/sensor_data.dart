@@ -1,16 +1,14 @@
 enum SoilStatus { low, normal, high }
 
-enum PlantType { rice, corn, cassava, sugarcane, rubber, other }
-
 enum SampleMethod { surface0_15, deep15_30, deep30_60 }
 
-const Map<PlantType, String> plantTypeLabels = {
-  PlantType.rice: 'ข้าว',
-  PlantType.corn: 'ข้าวโพด',
-  PlantType.cassava: 'มันสำปะหลัง',
-  PlantType.sugarcane: 'อ้อย',
-  PlantType.rubber: 'ยางพารา',
-  PlantType.other: 'อื่นๆ',
+// Legacy default mappings for seeding and backward compatibility
+const Map<String, String> defaultPlants = {
+  'rice': 'ข้าว',
+  'corn': 'ข้าวโพด',
+  'cassava': 'มันสำปะหลัง',
+  'sugarcane': 'อ้อย',
+  'rubber': 'ยางพารา',
 };
 
 const Map<SampleMethod, String> sampleMethodLabels = {
@@ -19,23 +17,11 @@ const Map<SampleMethod, String> sampleMethodLabels = {
   SampleMethod.deep30_60: 'เก็บลึก 30-60 cm',
 };
 
-const Map<PlantType, String> plantTypeValues = {
-  PlantType.rice: 'rice',
-  PlantType.corn: 'corn',
-  PlantType.cassava: 'cassava',
-  PlantType.sugarcane: 'sugarcane',
-  PlantType.rubber: 'rubber',
-  PlantType.other: 'other',
-};
-
 const Map<SampleMethod, String> sampleMethodValues = {
   SampleMethod.surface0_15: 'surface_0_15',
   SampleMethod.deep15_30: 'deep_15_30',
   SampleMethod.deep30_60: 'deep_30_60',
 };
-
-PlantType plantTypeFromString(String s) =>
-    plantTypeValues.entries.firstWhere((e) => e.value == s, orElse: () => const MapEntry(PlantType.other, 'other')).key;
 
 SampleMethod sampleMethodFromString(String s) =>
     sampleMethodValues.entries.firstWhere((e) => e.value == s, orElse: () => const MapEntry(SampleMethod.surface0_15, 'surface_0_15')).key;
@@ -80,29 +66,23 @@ class MeasurementRecord extends SensorData {
   final String? id;
   final String? userId;
   final DateTime? measuredAt;
-  final PlantType plantType;
+  final String plantId;
+  final String plantName;
   final SampleMethod sampleMethod;
   final String? notes;
   final double lat;
   final double lng;
   final String? pointName;
-  final String? customPlant;
-
-  /// Display-friendly plant name: uses customPlant when plantType is 'other'
-  String get plantLabel =>
-      plantType == PlantType.other && customPlant != null && customPlant!.isNotEmpty
-          ? customPlant!
-          : plantTypeLabels[plantType] ?? 'อื่นๆ';
 
   const MeasurementRecord({
     this.id,
     this.userId,
     this.measuredAt,
-    required this.plantType,
+    required this.plantId,
+    required this.plantName,
     required this.sampleMethod,
     this.notes,
     this.pointName,
-    this.customPlant,
     required this.lat,
     required this.lng,
     required super.ph,
@@ -120,11 +100,14 @@ class MeasurementRecord extends SensorData {
       id: json['id'] as String?,
       userId: json['user_id'] as String?,
       measuredAt: json['measured_at'] != null ? DateTime.parse(json['measured_at'] as String) : null,
-      plantType: plantTypeFromString(json['plant_type'] as String? ?? 'other'),
+      plantId: json['plant_id'] as String? ?? json['plant_type'] as String? ?? 'unknown',
+      plantName: json['plant_name'] as String? ?? 
+                 json['custom_plant'] as String? ?? 
+                 defaultPlants[json['plant_type'] as String?] ?? 
+                 'ไม่ทราบชนิด',
       sampleMethod: sampleMethodFromString(json['sample_method'] as String? ?? 'surface_0_15'),
       notes: json['notes'] as String?,
       pointName: json['point_name'] as String?,
-      customPlant: json['custom_plant'] as String?,
       lat: (json['lat'] as num?)?.toDouble() ?? 0,
       lng: (json['lng'] as num?)?.toDouble() ?? 0,
       ph: (json['ph'] as num).toDouble(),
@@ -142,11 +125,10 @@ class MeasurementRecord extends SensorData {
     if (id != null) 'id': id,
     if (userId != null) 'user_id': userId,
     if (measuredAt != null) 'measured_at': measuredAt!.toIso8601String(),
-    'plant_type': plantTypeValues[plantType],
+    'plant_id': plantId,
     'sample_method': sampleMethodValues[sampleMethod],
     if (notes != null) 'notes': notes,
     if (pointName != null) 'point_name': pointName,
-    if (customPlant != null) 'custom_plant': customPlant,
     'lat': lat,
     'lng': lng,
     'ph': ph,

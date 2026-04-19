@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/ble_service.dart';
 import '../services/database_service.dart';
@@ -169,28 +170,31 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
+                // App Customization Section
+                const _SectionLabel(label: 'การตั้งค่าแอปพลิเคชัน'),
+                _SettingsCard(
+                  children: [
+                    _ActionRow(
+                      label: 'จัดการชนิดพืช',
+                      showChevron: true,
+                      onTap: () => context.push('/settings/plants'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
                 // Database Section
                 const _SectionLabel(label: 'ฐานข้อมูล'),
                 _SettingsCard(
                   children: [
-                    ListTile(
-                      leading: Icon(Icons.dataset, color: context.colors.primaryBtn),
-                      title: Text('เพิ่มข้อมูลตัวอย่าง 100 รายการ',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textNormal)),
-                      subtitle: Text('สร้างข้อมูลจำลองสำหรับทดสอบ',
-                          style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+                    _ActionRow(
+                      label: 'เพิ่มข้อมูลตัวอย่าง 100 รายการ',
                       onTap: () => _seedData(context),
                     ),
                     Divider(height: 1, color: context.colors.dividerColor),
-                    ListTile(
-                      leading: Icon(Icons.delete_outline,
-                          color: context.colors.errorText),
-                      title: Text('ล้างข้อมูลทั้งหมด',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textNormal)),
-                      subtitle: Text('ลบข้อมูลการวัดทั้งหมด',
-                          style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+                    _ActionRow(
+                      label: 'ล้างข้อมูลทั้งหมด',
+                      isDestructive: true,
                       onTap: () => _clearData(context),
                     ),
                   ],
@@ -391,6 +395,45 @@ class _SettingsRow extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+  final bool showChevron;
+
+  const _ActionRow({
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+    this.showChevron = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDestructive ? context.colors.errorText : context.colors.textNormal,
+              ),
+            ),
+            if (showChevron)
+              Icon(Icons.chevron_right, size: 20, color: context.colors.textMuted),
+          ],
+        ),
       ),
     );
   }

@@ -13,7 +13,7 @@ class DatabaseService {
       id TEXT PRIMARY KEY,
       user_id TEXT,
       measured_at TEXT NOT NULL,
-      plant_type TEXT NOT NULL,
+      plant_id TEXT NOT NULL,
       sample_method TEXT NOT NULL,
       notes TEXT,
       lat REAL NOT NULL,
@@ -26,8 +26,14 @@ class DatabaseService {
       temperature REAL NOT NULL,
       ec REAL NOT NULL,
       salinity REAL NOT NULL,
-      point_name TEXT,
-      custom_plant TEXT
+      point_name TEXT
+    )
+  ''';
+
+  static const _createPlantsTable = '''
+    CREATE TABLE plants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL
     )
   ''';
 
@@ -42,9 +48,11 @@ class DatabaseService {
     final path = join(dbPath, 'soil_sensor.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute(_createTable);
+        await db.execute(_createPlantsTable);
+        await _seedDefaultPlants(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -53,16 +61,58 @@ class DatabaseService {
         if (oldVersion < 3) {
           await db.execute('ALTER TABLE $_tableName ADD COLUMN custom_plant TEXT');
         }
+        if (oldVersion < 4) {
+          await db.execute(_createPlantsTable);
+          await _seedDefaultPlants(db);
+
+          try {
+            await db.execute('''
+              INSERT INTO plants (id, name)
+              SELECT DISTINCT custom_plant as id, custom_plant as name
+              FROM $_tableName
+              WHERE custom_plant IS NOT NULL AND custom_plant != ''
+            ''');
+          } catch (e) {
+            // Ignore if column already refactored
+          }
+
+          try {
+             await db.execute('ALTER TABLE $_tableName RENAME COLUMN plant_type TO plant_id');
+          } catch(e) {
+             await db.execute('ALTER TABLE $_tableName ADD COLUMN plant_id TEXT');
+             await db.execute('UPDATE $_tableName SET plant_id = plant_type');
+          }
+
+          try {
+            await db.execute('''
+              UPDATE $_tableName
+              SET plant_id = custom_plant
+              WHERE custom_plant IS NOT NULL AND custom_plant != ''
+            ''');
+          } catch (e) {
+            // Ignore if custom_plant column doesn't exist
+          }
+        }
       },
     );
   }
 
+  static Future<void> _seedDefaultPlants(Database db) async {
+    final batch = db.batch();
+    for (var entry in defaultPlants.entries) {
+      batch.insert('plants', {
+        'id': entry.key,
+        'name': entry.value,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    await batch.commit(noResult: true);
+  }
+
   static Future<MeasurementRecord> saveMeasurement({
-    required PlantType plantType,
+    required String plantId,
     required SampleMethod sampleMethod,
     String? notes,
     String? pointName,
-    String? customPlant,
     required double lat,
     required double lng,
     required double ph,
@@ -77,7 +127,6 @@ class DatabaseService {
     final db = await database;
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final measuredAt = DateTime.now().toIso8601String();
-    final plantTypeStr = plantTypeValues[plantType]!;
     final sampleMethodStr = sampleMethodValues[sampleMethod]!;
 
     await db.insert(
@@ -85,11 +134,10 @@ class DatabaseService {
       {
         'id': id,
         'measured_at': measuredAt,
-        'plant_type': plantTypeStr,
+        'plant_id': plantId,
         'sample_method': sampleMethodStr,
         'notes': notes,
         'point_name': pointName,
-        'custom_plant': customPlant,
         'lat': lat,
         'lng': lng,
         'ph': ph,
@@ -103,14 +151,25 @@ class DatabaseService {
       },
     );
 
+    // Fetch the name for the returned record
+    String plantName = plantId;
+    try {
+      final res = await db.query('plants', columns: ['name'], where: 'id = ?', whereArgs: [plantId]);
+      if (res.isNotEmpty) {
+        plantName = res.first['name'] as String;
+      }
+    } catch (_) {
+      // Ignore
+    }
+
     return MeasurementRecord(
       id: id,
       measuredAt: DateTime.parse(measuredAt),
-      plantType: plantType,
+      plantId: plantId,
+      plantName: plantName,
       sampleMethod: sampleMethod,
       notes: notes,
       pointName: pointName,
-      customPlant: customPlant,
       lat: lat,
       lng: lng,
       ph: ph,
@@ -143,15 +202,54 @@ class DatabaseService {
       whereArgs.add(to.toIso8601String());
     }
 
-    final rows = await db.query(
-      _tableName,
-      where: where.isNotEmpty ? where : null,
-      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
-      orderBy: 'measured_at DESC',
-      limit: limit,
-    );
+    final rows = await db.rawQuery('''
+      SELECT m.*, p.name as plant_name 
+      FROM $_tableName m 
+      LEFT JOIN plants p ON m.plant_id = p.id
+      ${where.isNotEmpty ? 'WHERE $where' : ''}
+      ORDER BY m.measured_at DESC
+      ${limit != null ? 'LIMIT $limit' : ''}
+    ''', whereArgs.isNotEmpty ? whereArgs : null);
 
     return rows.map((row) => _rowToRecord(row)).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getPlants() async {
+    final db = await database;
+    return db.query('plants', orderBy: 'name ASC');
+  }
+
+  static Future<String> addPlant(String name) async {
+    final db = await database;
+    final id = 'custom_${DateTime.now().millisecondsSinceEpoch}';
+    await db.insert('plants', {
+      'id': id,
+      'name': name,
+    });
+    return id;
+  }
+
+  static Future<int> getMeasurementCountByPlant(String plantId) async {
+    final db = await database;
+    final res = await db.rawQuery('SELECT COUNT(*) as count FROM $_tableName WHERE plant_id = ?', [plantId]);
+    if (res.isNotEmpty) {
+      return (res.first['count'] as int?) ?? 0;
+    }
+    return 0;
+  }
+
+  static Future<void> deletePlant(String id) async {
+    final db = await database;
+    
+    // Note: User allowed deleting default plants.
+
+    // Check if it's in use
+    final count = await getMeasurementCountByPlant(id);
+    if (count > 0) {
+      throw Exception('Cannot delete plant: measurements exist ($count).');
+    }
+
+    await db.delete('plants', where: 'id = ?', whereArgs: [id]);
   }
 
   static Future<void> deleteMeasurement(String id) async {
@@ -166,11 +264,14 @@ class DatabaseService {
       measuredAt: row['measured_at'] != null
           ? DateTime.parse(row['measured_at'] as String)
           : null,
-      plantType: plantTypeFromString(row['plant_type'] as String),
+      plantId: row['plant_id'] as String? ?? row['plant_type'] as String? ?? 'unknown',
+      plantName: row['plant_name'] as String? ?? 
+                 row['custom_plant'] as String? ?? 
+                 defaultPlants[row['plant_type'] as String?] ?? 
+                 'ไม่ทราบชนิด',
       sampleMethod: sampleMethodFromString(row['sample_method'] as String),
       notes: row['notes'] as String?,
       pointName: row['point_name'] as String?,
-      customPlant: row['custom_plant'] as String?,
       lat: (row['lat'] as num).toDouble(),
       lng: (row['lng'] as num).toDouble(),
       ph: (row['ph'] as num).toDouble(),
@@ -208,7 +309,7 @@ class DatabaseService {
       final temperature = _r(15, 40);
       final ec = _r(0.1, 4.0);
       final salinity = ec * 0.64;
-      final plantType = PlantType.values[_ri(0, PlantType.values.length - 1)];
+
       final sampleMethod =
           SampleMethod.values[_ri(0, SampleMethod.values.length - 1)];
 
@@ -217,8 +318,9 @@ class DatabaseService {
         {
           'id': id,
           'measured_at': measuredAt.toIso8601String(),
-          'plant_type': plantTypeValues[plantType]!,
+          'plant_id': defaultPlants.keys.toList()[_ri(0, defaultPlants.length - 1)],
           'sample_method': sampleMethodValues[sampleMethod]!,
+          'point_name': 'จุดทดสอบที่ ${i + 1}',
           if (i % 5 == 0) 'notes': 'ตัวอย่างดินชุดที่ ${i + 1}',
           'lat': lat,
           'lng': lng,

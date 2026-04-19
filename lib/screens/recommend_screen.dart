@@ -18,12 +18,14 @@ const _sensorKeys = [
 ];
 
 class RecommendScreen extends StatelessWidget {
-  const RecommendScreen({super.key});
+  final MeasurementRecord? record;
+  const RecommendScreen({super.key, this.record});
 
   @override
   Widget build(BuildContext context) {
     final ble = context.watch<BleService>();
-    final data = ble.sensorData;
+    final SensorData? data = record ?? ble.sensorData;
+    final isHistorical = record != null;
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
@@ -75,8 +77,29 @@ class RecommendScreen extends StatelessWidget {
                         height: 1.2,
                         letterSpacing: -0.5)),
                 const SizedBox(height: 4),
-                Text('อ้างอิงจากค่าที่วัดได้ล่าสุด',
+                Text(
+                    isHistorical && record!.measuredAt != null
+                        ? 'ข้อมูลวันที่ ${record!.measuredAt!.day.toString().padLeft(2, '0')}/${record!.measuredAt!.month.toString().padLeft(2, '0')}/${record!.measuredAt!.year} ${record!.measuredAt!.hour.toString().padLeft(2, '0')}:${record!.measuredAt!.minute.toString().padLeft(2, '0')}'
+                        : 'อ้างอิงจากค่าที่วัดได้ล่าสุด',
                     style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
+                if (isHistorical) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.eco, size: 14, color: context.colors.primaryBtn),
+                      const SizedBox(width: 4),
+                      Text('พืชที่ปลูก: ${record!.plantName}',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.primaryBtn)),
+                      if (record!.pointName != null && record!.pointName!.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Icon(Icons.location_on, size: 14, color: context.colors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(record!.pointName!,
+                            style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
+                      ],
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 ..._sensorKeys.map((key) => _RecommendCard(

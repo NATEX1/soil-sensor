@@ -162,7 +162,7 @@ class MapBottomSheet extends StatelessWidget {
                                       Text(
                                         m.pointName?.isNotEmpty == true
                                             ? m.pointName!
-                                            : (plantTypeLabels[m.plantType] ?? ''),
+                                            : m.plantName,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,

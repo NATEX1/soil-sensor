@@ -5,7 +5,7 @@ class SupabaseService {
   static SupabaseClient get _client => Supabase.instance.client;
 
   static Future<MeasurementRecord> saveMeasurement({
-    required PlantType plantType,
+    required String plantId,
     required SampleMethod sampleMethod,
     String? notes,
     required double lat,
@@ -20,7 +20,8 @@ class SupabaseService {
     required double salinity,
   }) async {
     final record = MeasurementRecord(
-      plantType: plantType,
+      plantId: plantId,
+      plantName: plantId, // Since this goes to supabase, plantName will be resolved differently or this is enough for the insert
       sampleMethod: sampleMethod,
       notes: notes,
       lat: lat,

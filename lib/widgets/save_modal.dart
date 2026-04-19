@@ -20,28 +20,41 @@ class SaveModal extends StatefulWidget {
 }
 
 class _SaveModalState extends State<SaveModal> {
-  PlantType _plantType = PlantType.rice;
+  String? _selectedPlantId;
   SampleMethod _sampleMethod = SampleMethod.surface0_15;
   final _notesController = TextEditingController();
   final _pointNameController = TextEditingController();
-  final _customPlantController = TextEditingController();
   double? _lat;
   double? _lng;
   bool _saving = false;
   bool _locating = false;
   String? _error;
+  List<Map<String, dynamic>> _plants = [];
+
 
   @override
   void initState() {
     super.initState();
     _getLocation();
+    _loadPlants();
+  }
+
+  Future<void> _loadPlants() async {
+    final plants = await DatabaseService.getPlants();
+    if (mounted) {
+      setState(() {
+        _plants = plants;
+        if (_plants.isNotEmpty && _selectedPlantId == null) {
+          _selectedPlantId = _plants.first['id'] as String;
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _notesController.dispose();
     _pointNameController.dispose();
-    _customPlantController.dispose();
     super.dispose();
   }
 
@@ -75,12 +88,9 @@ class _SaveModalState extends State<SaveModal> {
     });
     try {
       await DatabaseService.saveMeasurement(
-        plantType: _plantType,
+        plantId: _selectedPlantId ?? 'rice',
         sampleMethod: _sampleMethod,
         pointName: _pointNameController.text.isEmpty ? null : _pointNameController.text,
-        customPlant: _plantType == PlantType.other && _customPlantController.text.isNotEmpty
-            ? _customPlantController.text
-            : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         lat: _lat ?? 0,
         lng: _lng ?? 0,
@@ -99,6 +109,29 @@ class _SaveModalState extends State<SaveModal> {
     } finally {
       setState(() => _saving = false);
     }
+  }
+
+  Widget _buildChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? context.colors.primaryBtn : context.colors.cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: selected
+                  ? context.colors.primaryBtn
+                  : context.colors.borderColor.withValues(alpha: 0.5)),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : context.colors.textMuted)),
+      ),
+    );
   }
 
   @override
@@ -181,7 +214,7 @@ class _SaveModalState extends State<SaveModal> {
                     controller: _pointNameController,
                     style: TextStyle(fontSize: 14, color: context.colors.textNormal),
                     decoration: InputDecoration(
-                      hintText: 'เช่น จุดที่ 1 หรือ จุด A',
+                      hintText: 'เช่น จุดทดสอบที่ 1',
                       hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
                       filled: true,
                       fillColor: context.colors.cardBg,
@@ -207,60 +240,20 @@ class _SaveModalState extends State<SaveModal> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: PlantType.values.map((pt) {
-                      final selected = _plantType == pt;
-                      return GestureDetector(
-                        onTap: () => setState(() => _plantType = pt),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: selected ? context.colors.primaryBtn : context.colors.cardBg,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: selected ? context.colors.primaryBtn : context.colors.borderColor.withValues(alpha: 0.5)),
-                          ),
-                          child: Text(plantTypeLabels[pt]!,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: selected ? Colors.white : context.colors.textMuted)),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  // Custom plant name field (shown when 'อื่นๆ' is selected)
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    child: _plantType == PlantType.other
-                        ? Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: TextField(
-                              controller: _customPlantController,
-                              style: TextStyle(fontSize: 14, color: context.colors.textNormal),
-                              decoration: InputDecoration(
-                                hintText: 'ระบุชื่อพืช เช่น มะม่วง, ทุเรียน',
-                                hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
-                                prefixIcon: Icon(Icons.eco_outlined,
-                                    size: 18, color: context.colors.primaryBtn),
-                                filled: true,
-                                fillColor: context.colors.cardBg,
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none),
-                                enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.3))),
-                                focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.6))),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
+                    children: [
+                      ..._plants.map((p) {
+                        return _buildChip(
+                          p['name'] as String,
+                          _selectedPlantId == p['id'],
+                          () => setState(() => _selectedPlantId = p['id'] as String),
+                        );
+                      }),
+                      _buildChip(
+                        '+ เพิ่มชนิดพืชอื่น',
+                        false,
+                        _showAddPlantDialog,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   Text('วิธีเก็บตัวอย่าง',
@@ -393,5 +386,49 @@ class _SaveModalState extends State<SaveModal> {
         ),
       ),
     );
+  }
+
+  Future<void> _showAddPlantDialog() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.colors.cardBg,
+        title: Text('เพิ่มชนิดพืชอื่น', style: TextStyle(color: context.colors.textNormal, fontSize: 18, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          style: TextStyle(color: context.colors.textNormal),
+          decoration: InputDecoration(
+            hintText: 'เช่น มะม่วง, ทุเรียน, etc.',
+            hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+            filled: true,
+            fillColor: Theme.of(context).scaffoldBackgroundColor,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            style: FilledButton.styleFrom(backgroundColor: context.colors.primaryBtn),
+            child: const Text('บันทึก'),
+          ),
+        ],
+      ),
+    );
+
+    if (name != null && name.isNotEmpty) {
+      final id = await DatabaseService.addPlant(name);
+      await _loadPlants();
+      if (mounted) {
+        setState(() {
+          _selectedPlantId = id;
+        });
+      }
+    }
   }
 }

@@ -59,6 +59,7 @@ class AppColors {
 
   // Map & Tabs
   Color get tabBg => isDark ? const Color(0xFF1f2937) : const Color(0xFFf3f4f6);
+  Color get tabSelectedBg => isDark ? const Color(0xFF374151) : Colors.white;
   Color get tabSelected => isDark ? const Color(0xFF22c55e) : const Color(0xFF16a34a);
   Color get mapDragHandle => isDark ? const Color(0xFF6b7280) : const Color(0xFFd1d5db);
   Color get mapSelectedBorder => isDark ? const Color(0xFF16a34a) : const Color(0xFF86efac);
