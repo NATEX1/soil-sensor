@@ -13,11 +13,12 @@ class ScanScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ble = context.watch<BleService>();
     final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: ListView(
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, 24),
+        padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, bottomPadding + 24),
         children: [
           // — Minimal Header —
           Text('สแกน BLE',

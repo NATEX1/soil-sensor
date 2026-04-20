@@ -61,7 +61,7 @@ class BleService extends ChangeNotifier {
         }
       });
     } catch (e) {
-      _error = 'ไม่สามารถสแกนได้: $e';
+      _error = _getFriendlyErrorMessage('ไม่สามารถสแกนได้', e);
       _isScanning = false;
       notifyListeners();
     }
@@ -92,7 +92,7 @@ class BleService extends ChangeNotifier {
       await _startNotifications(device);
       notifyListeners();
     } catch (e) {
-      _error = 'ไม่สามารถเชื่อมต่อกับอุปกรณ์ได้: $e';
+      _error = _getFriendlyErrorMessage('ไม่สามารถเชื่อมต่อกับอุปกรณ์ได้', e);
       notifyListeners();
       rethrow;
     }
@@ -190,6 +190,31 @@ class BleService extends ChangeNotifier {
     );
     _lastUpdate = DateTime.now();
     notifyListeners();
+  }
+
+  String _getFriendlyErrorMessage(String prefix, dynamic e) {
+    final errorStr = e.toString().toLowerCase();
+    
+    if (errorStr.contains('bluetooth must be turned on') || 
+        errorStr.contains('ble is turned off') || 
+        errorStr.contains('cbmanagerstateunsupported') ||
+        errorStr.contains('cbmanagerstatepoweredoff') ||
+        errorStr.contains('bluetooth is disabled')) {
+      return '$prefix: กรุณาเปิดบลูทูธบนสมาทโฟนของคุณ';
+    }
+    if (errorStr.contains('location') || 
+        errorStr.contains('permission') || 
+        errorStr.contains('denied')) {
+      return '$prefix: กรุณาเปิดตำแหน่ง (Location) และอนุญาตการเข้าถึง';
+    }
+    if (errorStr.contains('timeout') || errorStr.contains('time out')) {
+      return '$prefix: ใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง';
+    }
+    if (errorStr.contains('not found') || errorStr.contains('disconnected')) {
+      return '$prefix: ไม่พบอุปกรณ์หรืออุปกรณ์ขาดการเชื่อมต่อ';
+    }
+    
+    return '$prefix: เกิดข้อผิดพลาดของระบบ กรุณาลองเปิด-ปิดบลูทูธแล้วลองใหม่';
   }
 
   @override

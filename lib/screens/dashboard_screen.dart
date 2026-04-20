@@ -86,6 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         measurements.filteredMeasurements.isNotEmpty;
     final activeLastUpdate = _getActiveLastUpdate(ble, measurements);
     final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -93,7 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onRefresh: () async => setState(() {}),
         child: ListView(
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-          padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, bottomPadding + 24),
           children: [
             // — Minimal Header —
             Row(
@@ -254,19 +255,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: context.colors.errorBg.withValues(alpha: 0.08),
+                    color: context.colors.errorBg,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.colors.errorBorder),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.error_outline,
-                          size: 15, color: context.colors.errorBg),
+                          size: 15, color: context.colors.errorText),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(ble.error!,
                             style: TextStyle(
                                 fontSize: 12,
-                                color: context.colors.errorBg)),
+                                color: context.colors.errorText)),
                       ),
                     ],
                   ),

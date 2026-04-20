@@ -23,6 +23,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<MeasurementsProvider>();
     final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -30,7 +31,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         onRefresh: provider.fetch,
         child: ListView(
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-          padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, bottomPadding + 24),
           children: [
             // — Minimal Header —
             Row(

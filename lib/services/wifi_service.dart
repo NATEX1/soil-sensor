@@ -85,9 +85,9 @@ class WiFiService extends ChangeNotifier {
         }
       }
 
-      _error = 'ไม่พบอุปกรณ์ในเครือข่าย';
+      _error = 'ไม่พบอุปกรณ์ในเครือข่าย กรุณาตรวจสอบว่าเชื่อมต่อ WiFi เดียวกับอุปกรณ์แล้ว';
     } catch (e) {
-      _error = 'ไม่สามารถสแกนได้: $e';
+      _error = _getFriendlyErrorMessage('ไม่สามารถสแกนได้', e);
     } finally {
       _isScanning = false;
       notifyListeners();
@@ -114,7 +114,7 @@ class WiFiService extends ChangeNotifier {
         throw Exception('Device returned status ${response.statusCode}');
       }
     } catch (e) {
-      _error = 'ไม่สามารถเชื่อมต่อได้: $e';
+      _error = _getFriendlyErrorMessage('ไม่สามารถเชื่อมต่อได้', e);
       _isConnected = false;
       notifyListeners();
       rethrow;
@@ -156,10 +156,10 @@ class WiFiService extends ChangeNotifier {
       if (response.statusCode == 200) {
         _parseSensorData(response.body);
       } else {
-        _error = 'Device error: ${response.statusCode}';
+        _error = 'อุปกรณ์ขัดข้อง (รหัส: ${response.statusCode})';
       }
     } catch (e) {
-      _error = 'Connection lost: $e';
+      _error = 'การเชื่อมต่อขาดหาย กรุณาตรวจสอบเครือข่าย WiFi';
       _isConnected = false;
       _stopPolling();
     }
@@ -185,7 +185,7 @@ class WiFiService extends ChangeNotifier {
       _lastUpdate = DateTime.now();
       _error = null;
     } catch (e) {
-      _error = 'Invalid data format: $e';
+      _error = 'รูปแบบข้อมูลไม่ถูกต้อง';
     }
   }
 
@@ -204,9 +204,25 @@ class WiFiService extends ChangeNotifier {
 
       return response.statusCode == 200;
     } catch (e) {
-      _error = 'Failed to send config: $e';
+      _error = 'ไม่สามารถส่งการตั้งค่าได้';
       return false;
     }
+  }
+
+  String _getFriendlyErrorMessage(String prefix, dynamic e) {
+    final errorStr = e.toString().toLowerCase();
+
+    if (errorStr.contains('timeout') || errorStr.contains('time out')) {
+      return '$prefix: ใช้เวลานานเกินไป กรุณาตรวจสอบการเชื่อมต่อ WiFi';
+    }
+    if (errorStr.contains('refused') || errorStr.contains('failed to connect')) {
+      return '$prefix: อุปกรณ์ปฏิเสธการเชื่อมต่อ หรือ IP ไม่ถูกต้อง';
+    }
+    if (errorStr.contains('socketexception') || errorStr.contains('unreachable')) {
+      return '$prefix: ไม่สามารถติดต่ออุปกรณ์ได้ กรุณาตรวจสอบ WiFi';
+    }
+
+    return '$prefix: เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง';
   }
 
   @override

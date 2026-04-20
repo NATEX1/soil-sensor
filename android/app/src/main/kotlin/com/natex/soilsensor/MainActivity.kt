@@ -1,4 +1,4 @@
-package com.example.soil_sensor
+package com.natex.soilsensor
 
 import io.flutter.embedding.android.FlutterActivity
 

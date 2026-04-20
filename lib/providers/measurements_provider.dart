@@ -89,7 +89,7 @@ class MeasurementsProvider extends ChangeNotifier {
           await DatabaseService.getMeasurements(from: _dateRange.fromDate);
       _resolveLocationNames();
     } catch (e) {
-      _error = e.toString();
+      _error = 'เกิดข้อผิดพลาดในการโหลดประวัติข้อมูล';
     } finally {
       _loading = false;
       notifyListeners();
@@ -116,7 +116,7 @@ class MeasurementsProvider extends ChangeNotifier {
       _measurements = _measurements.where((m) => m.id != id).toList();
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      _error = 'เกิดข้อผิดพลาดในการลบข้อมูล';
       notifyListeners();
     }
   }
