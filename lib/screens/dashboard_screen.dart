@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/ble_service.dart';
+import '../services/wifi_service.dart';
 import '../providers/measurements_provider.dart';
 import '../widgets/sensor_card.dart';
 import '../widgets/save_modal.dart';
@@ -33,7 +34,10 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
+enum ConnectionMode { ble, wifi }
+
 class _DashboardScreenState extends State<DashboardScreen> {
+  ConnectionMode _connectionMode = ConnectionMode.wifi;
 
   String _formatLastUpdate(DateTime? date) {
     if (date == null) return 'ยังไม่มีข้อมูล';
@@ -41,18 +45,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  SensorData _getActiveData(BleService ble, MeasurementsProvider measurements) {
+  SensorData _getActiveData(BleService ble, WiFiService wifi, MeasurementsProvider measurements) {
+    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
+    if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.sensorData != null) return ble.sensorData!;
     if (ble.isConnected && ble.sensorData != null) return ble.sensorData!;
+    if (wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
     final saved = measurements.filteredMeasurements;
     if (saved.isNotEmpty) return saved.first;
     return const _DefaultSensorData();
   }
 
-  DateTime? _getActiveLastUpdate(BleService ble, MeasurementsProvider measurements) {
+  DateTime? _getActiveLastUpdate(BleService ble, WiFiService wifi, MeasurementsProvider measurements) {
+    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
+    if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
     if (ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
+    if (wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
     final saved = measurements.filteredMeasurements;
     if (saved.isNotEmpty && saved.first.measuredAt != null) return saved.first.measuredAt;
-    return ble.lastUpdate;
+    return null;
   }
 
   Future<void> _connectDevice(dynamic device) async {
@@ -80,11 +90,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final ble = context.watch<BleService>();
+    final wifi = context.watch<WiFiService>();
     final measurements = context.watch<MeasurementsProvider>();
-    final activeData = _getActiveData(ble, measurements);
-    final hasRealData = ble.isConnected && ble.sensorData != null ||
-        measurements.filteredMeasurements.isNotEmpty;
-    final activeLastUpdate = _getActiveLastUpdate(ble, measurements);
+    final activeData = _getActiveData(ble, wifi, measurements);
+    
+    final isAnyConnected = ble.isConnected || wifi.isConnected;
+    final hasRealData = (ble.isConnected && ble.sensorData != null) || 
+                        (wifi.isConnected && wifi.sensorData != null) ||
+                        measurements.filteredMeasurements.isNotEmpty;
+    final activeLastUpdate = _getActiveLastUpdate(ble, wifi, measurements);
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -117,22 +131,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: context.colors.textMuted)),
                   ],
                 ),
-                _ConnectionPill(ble: ble),
+                _ConnectionPill(
+                  isConnected: isAnyConnected,
+                  mode: isAnyConnected 
+                      ? (ble.isConnected ? ConnectionMode.ble : ConnectionMode.wifi)
+                      : _connectionMode,
+                ),
               ],
             ),
 
-            // — BLE device info —
-            if (ble.isConnected) ...[
+            // — Device info —
+            if (isAnyConnected) ...[
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(Icons.bluetooth_connected,
+                  Icon(ble.isConnected ? Icons.bluetooth_connected : Icons.wifi,
                       color: context.colors.primaryBtn, size: 13),
                   const SizedBox(width: 4),
                   Text(
-                    ble.isDemoMode
-                        ? 'Demo Sensor'
-                        : (ble.connectedDevice?.platformName ?? 'SoilSensor'),
+                    ble.isConnected 
+                        ? ((ble.connectedDevice != null && ble.connectedDevice!.platformName.isNotEmpty)
+                            ? ble.connectedDevice!.platformName
+                            : 'SoilSensor (Bluetooth)')
+                        : 'SoilSensor (WiFi)',
                     style: TextStyle(
                         color: context.colors.textMuted, fontSize: 12),
                   ),
@@ -145,9 +166,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // ═══════════════════════════════════════════
             // When NOT connected: show inline scan UI
             // ═══════════════════════════════════════════
-            if (!ble.isConnected) ...[
+            if (!isAnyConnected) ...[
               // — Centered scan card —
               const SizedBox(height: 20),
+
+              Center(
+                child: Container(
+                  width: 260,
+                  decoration: BoxDecoration(
+                    color: context.colors.cardBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: context.colors.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ModeTab(
+                          icon: Icons.wifi,
+                          label: 'WiFi',
+                          isSelected: _connectionMode == ConnectionMode.wifi,
+                          onTap: () => setState(() => _connectionMode = ConnectionMode.wifi),
+                        ),
+                      ),
+                      Expanded(
+                        child: _ModeTab(
+                          icon: Icons.bluetooth,
+                          label: 'Bluetooth',
+                          isSelected: _connectionMode == ConnectionMode.ble,
+                          onTap: () => setState(() => _connectionMode = ConnectionMode.ble),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                 decoration: BoxDecoration(
@@ -157,126 +211,146 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: context.colors.borderColor.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    // BLE icon
-                    _ScanAnimation(isScanning: ble.isScanning),
-                    const SizedBox(height: 20),
-
-                    // Status text
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: Text(
-                        ble.isScanning
-                            ? 'กำลังค้นหาอุปกรณ์...'
-                            : 'แตะเพื่อค้นหา SoilSensor',
-                        key: ValueKey(ble.isScanning),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: context.colors.textNormal,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'เชื่อมต่ออุปกรณ์เพื่อเริ่มวิเคราะห์ดิน',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Buttons
-                    Row(
+                child: Builder(
+                  builder: (context) {
+                    final isScanning = _connectionMode == ConnectionMode.ble ? ble.isScanning : wifi.isScanning;
+                    return Column(
                       children: [
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: ble.isScanning
-                                ? () => context.read<BleService>().stopScan()
-                                : () => context.read<BleService>().startScan(),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: ble.isScanning
-                                  ? context.colors.textMuted.withValues(alpha: 0.15)
-                                  : context.colors.primaryBtn,
-                              foregroundColor: ble.isScanning
-                                  ? context.colors.textNormal
-                                  : Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                              elevation: 0,
+                        // Icon
+                        _ScanAnimation(
+                          isScanning: isScanning,
+                          icon: _connectionMode == ConnectionMode.ble ? Icons.bluetooth : Icons.wifi,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Status text
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          child: Text(
+                            isScanning
+                                ? 'กำลังค้นหาอุปกรณ์...'
+                                : 'แตะเพื่อค้นหา SoilSensor',
+                            key: ValueKey(isScanning),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: context.colors.textNormal,
                             ),
-                            icon: Icon(
-                                ble.isScanning
-                                    ? Icons.stop_rounded
-                                    : Icons.bluetooth_searching,
-                                size: 18),
-                            label: Text(
-                                ble.isScanning ? 'หยุด' : 'เริ่มสแกน',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              context.read<BleService>().startDemoMode();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: context.colors.primaryBtn,
-                              side: BorderSide(
-                                  color: context.colors.borderColor),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                            ),
-                            icon: const Icon(Icons.science_outlined,
-                                size: 18),
-                            label: const Text('Demo',
-                                style:
-                                    TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        Text(
+                          'เชื่อมต่ออุปกรณ์เพื่อเริ่มวิเคราะห์ดิน',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.colors.textMuted,
                           ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: isScanning
+                                    ? (_connectionMode == ConnectionMode.ble 
+                                        ? () => context.read<BleService>().stopScan() 
+                                        : () => context.read<WiFiService>().stopScan())
+                                    : () => _connectionMode == ConnectionMode.ble
+                                        ? context.read<BleService>().startScan()
+                                        : context.read<WiFiService>().scanForDevice(),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: isScanning
+                                      ? context.colors.textMuted.withValues(alpha: 0.15)
+                                      : context.colors.primaryBtn,
+                                  foregroundColor: isScanning
+                                      ? context.colors.textNormal
+                                      : Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                  elevation: 0,
+                                ),
+                                icon: Icon(
+                                    isScanning
+                                        ? Icons.stop_rounded
+                                        : (_connectionMode == ConnectionMode.ble ? Icons.bluetooth_searching : Icons.wifi_find),
+                                    size: 18),
+                                label: Text(
+                                    isScanning ? 'หยุด' : 'เริ่มสแกน',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  context.read<BleService>().startDemoMode();
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: context.colors.primaryBtn,
+                                  side: BorderSide(
+                                      color: context.colors.borderColor),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                ),
+                                icon: const Icon(Icons.science_outlined,
+                                    size: 18),
+                                label: const Text('Demo',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w600)),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  }
                 ),
               ),
 
               // — Error —
-              if (ble.error != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.colors.errorBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.colors.errorBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 15, color: context.colors.errorText),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(ble.error!,
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: context.colors.errorText)),
+              Builder(
+                builder: (context) {
+                  final currentError = _connectionMode == ConnectionMode.ble ? ble.error : wifi.error;
+                  if (currentError != null) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: context.colors.errorBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.colors.errorBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline,
+                                size: 15, color: context.colors.errorText),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(currentError,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: context.colors.errorText)),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }
+              ),
 
               // — Found devices —
-              if (ble.foundDevices.isNotEmpty) ...[
+              if (_connectionMode == ConnectionMode.ble && ble.foundDevices.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -319,7 +393,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       size: 12, color: context.colors.textMuted),
                   const SizedBox(width: 5),
                   Text(
-                    'ต้องเปิด Bluetooth และอนุญาตสิทธิ์ Location',
+                    _connectionMode == ConnectionMode.ble
+                        ? 'ต้องเปิด Bluetooth และอนุญาตสิทธิ์ Location'
+                        : 'ต้องเชื่อมต่อ WiFi วงเดียวกันกับอุปกรณ์',
                     style: TextStyle(
                         fontSize: 11, color: context.colors.textMuted),
                   ),
@@ -336,7 +412,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: 'อัปเดตล่าสุด',
                 value: _formatLastUpdate(activeLastUpdate),
               ),
-              if (!ble.isConnected && hasRealData) ...[
+              if (!isAnyConnected && hasRealData) ...[
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -439,18 +515,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // — Small helper widgets —
 
 class _ConnectionPill extends StatelessWidget {
-  final BleService ble;
-  const _ConnectionPill({required this.ble});
+  final bool isConnected;
+  final ConnectionMode mode;
+  const _ConnectionPill({required this.isConnected, required this.mode});
 
   @override
   Widget build(BuildContext context) {
-    final connected = ble.isConnected || ble.isDemoMode;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: connected
+        color: isConnected
             ? context.colors.statusConnectedBg
             : context.colors.statusDisconnectedBg,
         borderRadius: BorderRadius.circular(20),
@@ -463,19 +539,24 @@ class _ConnectionPill extends StatelessWidget {
             width: 7,
             height: 7,
             decoration: BoxDecoration(
-              color: connected
+              color: isConnected
                   ? context.colors.statusDotConnected
                   : context.colors.statusDotDisconnected,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: 5),
+          if (isConnected) ...[
+            Icon(mode == ConnectionMode.ble ? Icons.bluetooth : Icons.wifi,
+                size: 10, color: context.colors.statusTextConnected),
+            const SizedBox(width: 3),
+          ],
           Text(
-            ble.isDemoMode ? 'Demo' : (connected ? 'Online' : 'Offline'),
+            isConnected ? 'Online' : 'Offline',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: connected
+              color: isConnected
                   ? context.colors.statusTextConnected
                   : context.colors.statusTextDisconnected,
             ),
@@ -515,7 +596,8 @@ class _InfoRow extends StatelessWidget {
 
 class _ScanAnimation extends StatefulWidget {
   final bool isScanning;
-  const _ScanAnimation({required this.isScanning});
+  final IconData icon;
+  const _ScanAnimation({required this.isScanning, this.icon = Icons.bluetooth});
   @override
   State<_ScanAnimation> createState() => _ScanAnimationState();
 }
@@ -572,12 +654,56 @@ class _ScanAnimationState extends State<_ScanAnimation>
                   ? context.colors.primaryBtn
                   : context.colors.cardBg,
             ),
-            child: Icon(Icons.bluetooth,
+            child: Icon(widget.icon,
                 color:
                     widget.isScanning ? Colors.white : context.colors.textMuted,
                 size: 30),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ModeTab({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? context.colors.primaryBtn.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, 
+                size: 16, 
+                color: isSelected ? context.colors.primaryBtn : context.colors.textMuted),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? context.colors.primaryBtn : context.colors.textMuted)),
+          ],
+        ),
       ),
     );
   }

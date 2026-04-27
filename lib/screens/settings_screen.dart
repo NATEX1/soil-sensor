@@ -43,7 +43,7 @@ class SettingsScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: ble.isConnected || ble.isDemoMode
+                          color: ble.isConnected
                               ? context.colors.statusConnectedBg
                               : context.colors.statusDisconnectedBg,
                           borderRadius: BorderRadius.circular(12),
@@ -55,7 +55,7 @@ class SettingsScreen extends StatelessWidget {
                               width: 6,
                               height: 6,
                               decoration: BoxDecoration(
-                                color: ble.isConnected || ble.isDemoMode
+                                color: ble.isConnected
                                     ? context.colors.statusDotConnected
                                     : context.colors.statusDotDisconnected,
                                 shape: BoxShape.circle,
@@ -63,15 +63,13 @@ class SettingsScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              ble.isDemoMode 
-                                ? 'โหมดจำลอง'
-                                : (ble.isConnected
-                                    ? 'เชื่อมต่อแล้ว'
-                                    : 'ไม่ได้เชื่อมต่อ'),
+                              ble.isConnected
+                                  ? 'เชื่อมต่อแล้ว'
+                                  : 'ไม่ได้เชื่อมต่อ',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: ble.isConnected || ble.isDemoMode
+                                color: ble.isConnected
                                     ? context.colors.statusTextConnected
                                     : context.colors.statusTextDisconnected,
                               ),
@@ -81,24 +79,19 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                     if (ble.isConnected) ...[
-                      if (ble.isDemoMode) ...[
-                        Divider(height: 1, color: context.colors.dividerColor),
-                        const _SettingsRow(label: 'ชื่ออุปกรณ์', value: 'Demo Sensor (Simulator)'),
-                        Divider(height: 1, color: context.colors.dividerColor),
-                        const _SettingsRow(label: 'โหมด', value: 'Demo Mode Active'),
-                      ] else if (ble.connectedDevice != null) ...[
-                        Divider(height: 1, color: context.colors.dividerColor),
-                        _SettingsRow(
-                            label: 'ชื่ออุปกรณ์',
-                            value: ble.connectedDevice!.platformName.isNotEmpty
-                                ? ble.connectedDevice!.platformName
-                                : 'SoilSensor'),
-                        Divider(height: 1, color: context.colors.dividerColor),
-                        _SettingsRow(
-                            label: 'MAC Address',
-                            value: ble.connectedDevice!.remoteId.toString(),
-                            mono: true),
-                      ],
+                      Divider(height: 1, color: context.colors.dividerColor),
+                      _SettingsRow(
+                          label: 'ชื่ออุปกรณ์',
+                          value: (ble.connectedDevice != null && ble.connectedDevice!.platformName.isNotEmpty)
+                              ? ble.connectedDevice!.platformName
+                              : 'SoilSensor'),
+                      Divider(height: 1, color: context.colors.dividerColor),
+                      _SettingsRow(
+                          label: 'MAC Address',
+                          value: ble.connectedDevice != null
+                              ? ble.connectedDevice!.remoteId.toString()
+                              : '00:00:00:00:00:00',
+                          mono: true),
                       Divider(height: 1, color: context.colors.dividerColor),
                       ListTile(
                         contentPadding:

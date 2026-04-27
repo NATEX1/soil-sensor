@@ -69,6 +69,8 @@ class WiFiService extends ChangeNotifier {
         // Scan in parallel batches
         const batchSize = 10;
         for (int i = 0; i < ipsToTry.length; i += batchSize) {
+          if (!_isScanning) break;
+
           final batch = ipsToTry.skip(i).take(batchSize).toList();
           final results = await Future.wait(
             batch.map((ip) => checkDevice(ip)),
@@ -89,7 +91,18 @@ class WiFiService extends ChangeNotifier {
     } catch (e) {
       _error = _getFriendlyErrorMessage('ไม่สามารถสแกนได้', e);
     } finally {
+      if (_isScanning) {
+        _isScanning = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Stop scanning
+  void stopScan() {
+    if (_isScanning) {
       _isScanning = false;
+      _error = 'ยกเลิกการค้นหาแล้ว';
       notifyListeners();
     }
   }

@@ -91,6 +91,9 @@ class _MapScreenState extends State<MapScreen> {
                           options: MapOptions(
                             initialCenter: initialCenter,
                             initialZoom: validPoints.isNotEmpty ? 10 : 5,
+                            interactionOptions: const InteractionOptions(
+                              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                            ),
                             onTap: (_, __) => setState(() => _selected = null),
                           ),
                           children: [
