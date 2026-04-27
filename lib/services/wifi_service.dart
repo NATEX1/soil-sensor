@@ -33,7 +33,16 @@ class WiFiService extends ChangeNotifier {
       final response = await http
           .get(Uri.parse('http://$ip:$port$apiEndpoint'))
           .timeout(const Duration(seconds: 3));
-      return response.statusCode == 200;
+          
+      if (response.statusCode == 200) {
+        try {
+          jsonDecode(response.body);
+          return true;
+        } catch (_) {
+          return false; // False positive from a local router
+        }
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -119,10 +128,15 @@ class WiFiService extends ChangeNotifier {
           .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        _isConnected = true;
-        _parseSensorData(response.body);
-        _startPolling();
-        notifyListeners();
+        try {
+          jsonDecode(response.body); // Validate JSON
+          _isConnected = true;
+          _parseSensorData(response.body);
+          _startPolling();
+          notifyListeners();
+        } catch (_) {
+          throw Exception('Device payload is not valid JSON Data');
+        }
       } else {
         throw Exception('Device returned status ${response.statusCode}');
       }
