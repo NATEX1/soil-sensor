@@ -151,50 +151,61 @@ class MainShell extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         child: navigationShell,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF111827) : Colors.white, // Match scaffold/pure white
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+              width: 1,
+            ),
+          ),
         ),
-        backgroundColor: isDark ? const Color(0xFF1f2937) : Colors.white,
-        indicatorColor: isDark ? const Color(0xFF14532d) : const Color(0xFFdcfce7),
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        height: 64,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        animationDuration: const Duration(milliseconds: 300),
-        destinations: [
-          NavigationDestination(
-            icon: Icon(Icons.eco_outlined,
-                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
-            selectedIcon: Icon(Icons.eco,
-                color: isDark ? Colors.white : const Color(0xFF16a34a)),
-            label: 'แดชบอร์ด',
+        child: SafeArea(
+          bottom: true,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
+            child: BottomNavigationBar(
+              currentIndex: navigationShell.currentIndex,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: isDark ? const Color(0xFF4ade80) : const Color(0xFF16a34a),
+              unselectedItemColor: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af),
+              selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.2),
+              unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+              onTap: (index) => navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              ),
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.eco_outlined, size: 24)),
+                  activeIcon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.eco_rounded, size: 24)),
+                  label: 'แดชบอร์ด',
+                ),
+                BottomNavigationBarItem(
+                  icon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.bar_chart_outlined, size: 24)),
+                  activeIcon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.bar_chart_rounded, size: 24)),
+                  label: 'ประวัติ',
+                ),
+                BottomNavigationBarItem(
+                  icon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.map_outlined, size: 24)),
+                  activeIcon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.map_rounded, size: 24)),
+                  label: 'แผนที่',
+                ),
+                BottomNavigationBarItem(
+                  icon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.settings_outlined, size: 24)),
+                  activeIcon: Padding(padding: EdgeInsets.only(bottom: 4, top: 4), child: Icon(Icons.settings_rounded, size: 24)),
+                  label: 'ตั้งค่า',
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined,
-                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
-            selectedIcon: Icon(Icons.bar_chart,
-                color: isDark ? Colors.white : const Color(0xFF16a34a)),
-            label: 'ประวัติ',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined,
-                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
-            selectedIcon: Icon(Icons.map,
-                color: isDark ? Colors.white : const Color(0xFF16a34a)),
-            label: 'แผนที่',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined,
-                color: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af)),
-            selectedIcon: Icon(Icons.settings,
-                color: isDark ? Colors.white : const Color(0xFF16a34a)),
-            label: 'ตั้งค่า',
-          ),
-        ],
+        ),
       ),
     );
   }

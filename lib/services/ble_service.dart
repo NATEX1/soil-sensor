@@ -6,8 +6,8 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/sensor_data.dart';
 import '../models/calculations.dart';
 
-const String serviceUuid = '12345678-1234-1234-1234-123456789abc';
-const String charUuid = 'abcd1234-ab12-ab12-ab12-abcdef123456';
+const String serviceUuid = 'b7185de0-2c63-4c74-8c21-f857dc3fb3eb';
+const String charUuid = '229b07fd-7823-4cbe-814c-b08dcca03572';
 const String deviceName = 'SoilSensor';
 
 class BleService extends ChangeNotifier {
@@ -23,6 +23,7 @@ class BleService extends ChangeNotifier {
   SensorData? _sensorData;
   DateTime? _lastUpdate;
   String? _error;
+  String? _rawData; // 🌟 เก็บข้อมูลดิบไปโชว์ในหน้าจอ 🌟
 
   List<BluetoothDevice> get foundDevices => List.unmodifiable(_foundDevices);
   bool get isScanning => _isScanning;
@@ -32,6 +33,7 @@ class BleService extends ChangeNotifier {
   SensorData? get sensorData => _sensorData;
   DateTime? get lastUpdate => _lastUpdate;
   String? get error => _error;
+  String? get rawData => _rawData; // 🌟 Getter 🌟
 
   Future<void> startScan() async {
     if (_isDemoMode) {
@@ -79,6 +81,17 @@ class BleService extends ChangeNotifier {
     try {
       await stopScan();
       await device.connect(timeout: const Duration(seconds: 10));
+      
+      // 🌟 1. รอให้ GATT นิ่งสักครู่ก่อนทำอย่างอื่น 🌟
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      // 🌟 2. ขยายขนาดการรับส่งข้อมูลฝั่งแอปให้ตรงกับบอร์ด 🌟
+      try {
+        await device.requestMtu(512);
+        // รอให้การขอ MTU เสร็จสมบูรณ์
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (_) {}
+      
       _connectedDevice = device;
 
       _connectionSubscription = device.connectionState.listen((state) {
@@ -99,13 +112,24 @@ class BleService extends ChangeNotifier {
   }
 
   Future<void> _startNotifications(BluetoothDevice device) async {
+    // 🌟 3. บังคับค้นหา Service ใหม่เพื่อให้เห็นค่าล่าสุด 🌟
     final services = await device.discoverServices();
+    
     for (final service in services) {
-      if (service.uuid.toString().toLowerCase() == serviceUuid) {
+      if (service.uuid.toString().toLowerCase() == serviceUuid.toLowerCase()) {
         for (final char in service.characteristics) {
-          if (char.uuid.toString().toLowerCase() == charUuid) {
+          if (char.uuid.toString().toLowerCase() == charUuid.toLowerCase()) {
+            
+            // 🌟 4. เปิด Notification 🌟
             await char.setNotifyValue(true);
+            
+            // ยกเลิกของเก่าถ้ามี
+            await _notifySubscription?.cancel();
+            
             _notifySubscription = char.onValueReceived.listen((value) {
+              if (kDebugMode) {
+                print("🔹 BLE Data Received: ${utf8.decode(value)}");
+              }
               _parseSensorData(value);
             });
             return;
@@ -117,23 +141,35 @@ class BleService extends ChangeNotifier {
 
   void _parseSensorData(List<int> value) {
     try {
-      final decoded = utf8.decode(value);
+      String decoded = utf8.decode(value).trim();
+      _rawData = decoded; // 🌟 บันทึกค่าที่ได้รับมา 🌟
+      
+      // 🌟 ระบบค้นหา JSON 🌟
+      if (decoded.contains('{') && decoded.contains('}')) {
+        decoded = decoded.substring(decoded.indexOf('{'), decoded.lastIndexOf('}') + 1);
+      }
+
       final raw = jsonDecode(decoded) as Map<String, dynamic>;
-      final ec = (raw['ec'] as num).toDouble();
+      
       _sensorData = SensorData(
-        ph: (raw['ph'] as num).toDouble(),
-        nitrogen: (raw['n'] as num).toDouble(),
-        phosphorus: (raw['p'] as num).toDouble(),
-        potassium: (raw['k'] as num).toDouble(),
-        moisture: (raw['moisture'] as num).toDouble(),
-        temperature: (raw['temp'] as num).toDouble(),
-        ec: ec,
-        salinity: calculateSalinity(ec),
+        ph: (raw['ph'] as num?)?.toDouble() ?? 0.0,
+        nitrogen: (raw['n'] as num?)?.toDouble() ?? 0.0,
+        phosphorus: (raw['p'] as num?)?.toDouble() ?? 0.0,
+        potassium: (raw['k'] as num?)?.toDouble() ?? 0.0,
+        moisture: (raw['moisture'] as num?)?.toDouble() ?? 0.0,
+        temperature: (raw['temp'] as num?)?.toDouble() ?? 0.0,
+        ec: (raw['ec'] as num?)?.toDouble() ?? 0.0,
+        salinity: calculateSalinity((raw['ec'] as num?)?.toDouble() ?? 0.0),
       );
       _lastUpdate = DateTime.now();
       notifyListeners();
-    } catch (_) {
-      // skip invalid data
+    } catch (e) {
+      _rawData = "Error: $e | Raw: ${utf8.decode(value)}";
+      if (kDebugMode) {
+        print("❌ BLE Parse Error: $e");
+        print("❌ Received Raw Data: ${utf8.decode(value)}");
+      }
+      notifyListeners();
     }
   }
 

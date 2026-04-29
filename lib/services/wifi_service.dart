@@ -6,7 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/sensor_data.dart';
 import '../models/calculations.dart';
 
-const String defaultDeviceIp = '192.168.4.1'; // Default IP when device is in AP mode
+const String defaultDeviceIp = '192.168.4.1'; // Standard ESP32 AP IP
 const int defaultPort = 80;
 const String apiEndpoint = '/api/sensor';
 
@@ -55,9 +55,10 @@ class WiFiService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Check default IP first
-      if (await checkDevice(defaultDeviceIp)) {
-        await connect(defaultDeviceIp);
+      // Check default IP and mDNS hostname first
+      if (await checkDevice('soilsensor.local') || await checkDevice(defaultDeviceIp)) {
+        final targetIp = await checkDevice('soilsensor.local') ? 'soilsensor.local' : defaultDeviceIp;
+        await connect(targetIp);
         _isScanning = false;
         notifyListeners();
         return;

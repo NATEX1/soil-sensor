@@ -4,10 +4,15 @@ import 'package:go_router/go_router.dart';
 import '../services/ble_service.dart';
 import '../services/wifi_service.dart';
 import '../providers/measurements_provider.dart';
-import '../widgets/sensor_card.dart';
-import '../widgets/save_modal.dart';
+import '../widgets/dashboard/sensor_card.dart';
+import '../widgets/dashboard/save_modal.dart';
 import '../models/sensor_data.dart';
 import '../theme/app_colors.dart';
+import '../widgets/dashboard/connection_pill.dart';
+import '../widgets/dashboard/info_row.dart';
+import '../widgets/dashboard/scan_animation.dart';
+import '../widgets/dashboard/mode_tab.dart';
+import '../widgets/dashboard/device_card.dart';
 
 const _sensorKeys = [
   ('ph', 'pH', ''),
@@ -131,75 +136,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: context.colors.textMuted)),
                   ],
                 ),
-                _ConnectionPill(
-                  isConnected: isAnyConnected,
-                  mode: isAnyConnected 
-                      ? (ble.isConnected ? ConnectionMode.ble : ConnectionMode.wifi)
-                      : _connectionMode,
+                ConnectionPill(
+                  isConnected: _connectionMode == ConnectionMode.ble ? ble.isConnected : wifi.isConnected,
+                  mode: _connectionMode,
                 ),
               ],
             ),
 
-            // — Device info —
-            if (isAnyConnected) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(ble.isConnected ? Icons.bluetooth_connected : Icons.wifi,
-                      color: context.colors.primaryBtn, size: 13),
-                  const SizedBox(width: 4),
-                  Text(
-                    ble.isConnected 
-                        ? ((ble.connectedDevice != null && ble.connectedDevice!.platformName.isNotEmpty)
-                            ? ble.connectedDevice!.platformName
-                            : 'SoilSensor (Bluetooth)')
-                        : 'SoilSensor (WiFi)',
-                    style: TextStyle(
-                        color: context.colors.textMuted, fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
+            const SizedBox(height: 16),
 
+            // — Mode Selector (Always Visible) —
+            Center(
+              child: Container(
+                width: 260,
+                decoration: BoxDecoration(
+                  color: context.colors.cardBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: context.colors.borderColor),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ModeTab(
+                        icon: Icons.wifi,
+                        label: 'WiFi',
+                        isSelected: _connectionMode == ConnectionMode.wifi,
+                        onTap: () => setState(() => _connectionMode = ConnectionMode.wifi),
+                      ),
+                    ),
+                    Expanded(
+                      child: ModeTab(
+                        icon: Icons.bluetooth,
+                        label: 'Bluetooth',
+                        isSelected: _connectionMode == ConnectionMode.ble,
+                        onTap: () => setState(() => _connectionMode = ConnectionMode.ble),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
 
             // ═══════════════════════════════════════════
-            // When NOT connected: show inline scan UI
+            // Active Connection Check
             // ═══════════════════════════════════════════
-            if (!isAnyConnected) ...[
-              // — Centered scan card —
-              const SizedBox(height: 20),
+            if ((_connectionMode == ConnectionMode.wifi && !wifi.isConnected) || 
+                (_connectionMode == ConnectionMode.ble && !ble.isConnected)) ...[
+              // — Show scan UI for the selected mode —
 
-              Center(
-                child: Container(
-                  width: 260,
-                  decoration: BoxDecoration(
-                    color: context.colors.cardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: context.colors.borderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _ModeTab(
-                          icon: Icons.wifi,
-                          label: 'WiFi',
-                          isSelected: _connectionMode == ConnectionMode.wifi,
-                          onTap: () => setState(() => _connectionMode = ConnectionMode.wifi),
-                        ),
-                      ),
-                      Expanded(
-                        child: _ModeTab(
-                          icon: Icons.bluetooth,
-                          label: 'Bluetooth',
-                          isSelected: _connectionMode == ConnectionMode.ble,
-                          onTap: () => setState(() => _connectionMode = ConnectionMode.ble),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 12),
 
               Container(
@@ -217,7 +202,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return Column(
                       children: [
                         // Icon
-                        _ScanAnimation(
+                        ScanAnimation(
                           isScanning: isScanning,
                           icon: _connectionMode == ConnectionMode.ble ? Icons.bluetooth : Icons.wifi,
                         ),
@@ -376,7 +361,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                ...ble.foundDevices.map((device) => _DeviceCard(
+                ...ble.foundDevices.map((device) => DeviceCard(
                       device: device,
                       isConnected:
                           ble.connectedDevice?.remoteId == device.remoteId,
@@ -403,11 +388,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ] else ...[
               // ═══════════════════════════════════════════
-              // When connected OR has cached data: show sensors
+              // When connected: show sensors
               // ═══════════════════════════════════════════
+              
+              // — Device info —
+              Row(
+                children: [
+                  Icon(_connectionMode == ConnectionMode.ble ? Icons.bluetooth_connected : Icons.wifi,
+                      color: context.colors.primaryBtn, size: 13),
+                  const SizedBox(width: 4),
+                  Text(
+                    _connectionMode == ConnectionMode.ble 
+                        ? ((ble.connectedDevice != null && ble.connectedDevice!.platformName.isNotEmpty)
+                            ? ble.connectedDevice!.platformName
+                            : 'SoilSensor (Bluetooth)')
+                        : 'SoilSensor (WiFi)',
+                    style: TextStyle(
+                        color: context.colors.textMuted, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
               // — Last update —
-              _InfoRow(
+              InfoRow(
                 icon: Icons.access_time_rounded,
                 label: 'อัปเดตล่าสุด',
                 value: _formatLastUpdate(activeLastUpdate),
@@ -512,297 +516,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// — Small helper widgets —
-
-class _ConnectionPill extends StatelessWidget {
-  final bool isConnected;
-  final ConnectionMode mode;
-  const _ConnectionPill({required this.isConnected, required this.mode});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: isConnected
-            ? context.colors.statusConnectedBg
-            : context.colors.statusDisconnectedBg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: isConnected
-                  ? context.colors.statusDotConnected
-                  : context.colors.statusDotDisconnected,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 5),
-          if (isConnected) ...[
-            Icon(mode == ConnectionMode.ble ? Icons.bluetooth : Icons.wifi,
-                size: 10, color: context.colors.statusTextConnected),
-            const SizedBox(width: 3),
-          ],
-          Text(
-            isConnected ? 'Online' : 'Offline',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isConnected
-                  ? context.colors.statusTextConnected
-                  : context.colors.statusTextDisconnected,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: context.colors.textMuted),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
-        const SizedBox(width: 8),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: context.colors.textNormal)),
-      ],
-    );
-  }
-}
-
-// — Scan animation (moved from scan_screen) —
-
-class _ScanAnimation extends StatefulWidget {
-  final bool isScanning;
-  final IconData icon;
-  const _ScanAnimation({required this.isScanning, this.icon = Icons.bluetooth});
-  @override
-  State<_ScanAnimation> createState() => _ScanAnimationState();
-}
-
-class _ScanAnimationState extends State<_ScanAnimation>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2))
-          ..repeat();
-    _animation = Tween<double>(begin: 0.8, end: 1.4)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 100,
-      height: 100,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (widget.isScanning)
-            AnimatedBuilder(
-              animation: _animation,
-              builder: (_, __) => Container(
-                width: 80 * _animation.value,
-                height: 80 * _animation.value,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: context.colors.primaryBtn
-                      .withValues(alpha: 0.12 * (2 - _animation.value)),
-                ),
-              ),
-            ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.isScanning
-                  ? context.colors.primaryBtn
-                  : context.colors.cardBg,
-            ),
-            child: Icon(widget.icon,
-                color:
-                    widget.isScanning ? Colors.white : context.colors.textMuted,
-                size: 30),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModeTab extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ModeTab({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? context.colors.primaryBtn.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, 
-                size: 16, 
-                color: isSelected ? context.colors.primaryBtn : context.colors.textMuted),
-            const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? context.colors.primaryBtn : context.colors.textMuted)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// — Device card (moved from scan_screen) —
-
-class _DeviceCard extends StatelessWidget {
-  final dynamic device;
-  final bool isConnected;
-  final VoidCallback onConnect;
-
-  const _DeviceCard(
-      {required this.device,
-      required this.isConnected,
-      required this.onConnect});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.colors.cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: isConnected
-                ? context.colors.successBannerBorder
-                : context.colors.borderColor.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isConnected
-                  ? context.colors.successBannerBg
-                  : context.colors.cardBg,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.bluetooth,
-                color: isConnected
-                    ? context.colors.primaryBtn
-                    : context.colors.textMuted,
-                size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  device.platformName.isNotEmpty
-                      ? device.platformName
-                      : 'Unknown',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: context.colors.textNormal),
-                ),
-                Text(device.remoteId.toString(),
-                    style: TextStyle(
-                        fontSize: 11, color: context.colors.textMuted)),
-              ],
-            ),
-          ),
-          if (isConnected)
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: context.colors.successBannerBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text('เชื่อมต่อแล้ว',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: context.colors.successBannerText)),
-            )
-          else
-            FilledButton(
-              onPressed: onConnect,
-              style: FilledButton.styleFrom(
-                backgroundColor: context.colors.primaryBtn,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child:
-                  const Text('เชื่อมต่อ', style: TextStyle(fontSize: 12)),
-            ),
-        ],
-      ),
-    );
-  }
-}

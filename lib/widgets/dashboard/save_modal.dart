@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import '../models/sensor_data.dart';
-import '../services/database_service.dart';
-import '../theme/app_colors.dart';
+import '../../models/sensor_data.dart';
+import '../../services/database_service.dart';
+import '../../theme/app_colors.dart';
 
 class SaveModal extends StatefulWidget {
   final SensorData? sensorData;

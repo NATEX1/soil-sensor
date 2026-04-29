@@ -1,13 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/measurements_provider.dart';
 import '../widgets/common/error_card.dart';
 import '../widgets/history/history_list_view.dart';
 import '../theme/app_colors.dart';
-import '../widgets/soil_chart.dart';
-
-
-enum _ViewTab { chart, table }
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -17,8 +17,6 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  _ViewTab _activeTab = _ViewTab.chart;
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<MeasurementsProvider>();
@@ -147,31 +145,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   if (provider.uniqueLocations.isNotEmpty)
                     const SizedBox(height: 12),
 
-                  // View tabs
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                        color: context.colors.tabBg, borderRadius: BorderRadius.circular(12)),
-                    child: Row(
-                      children: [
-                        _TabButton(
-                          label: 'กราฟ',
-                          icon: Icons.trending_up,
-                          selected: _activeTab == _ViewTab.chart,
-                          onTap: () =>
-                              setState(() => _activeTab = _ViewTab.chart),
-                        ),
-                        _TabButton(
-                          label: 'รายการ',
-                          icon: Icons.list_alt_rounded,
-                          selected: _activeTab == _ViewTab.table,
-                          onTap: () =>
-                              setState(() => _activeTab = _ViewTab.table),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+
 
                   if (provider.error != null)
                     ErrorCard(
@@ -199,8 +173,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: TextStyle(color: context.colors.textMuted)),
                       ]),
                     )
-                  else if (_activeTab == _ViewTab.chart)
-                    SoilChart(measurements: provider.filteredMeasurements)
                   else
                     HistoryListView(measurements: provider.filteredMeasurements),
           ],
@@ -211,53 +183,91 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _exportToExcel(
       BuildContext context, MeasurementsProvider provider) async {
+    final measurements = provider.filteredMeasurements;
+    if (measurements.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('ไม่มีข้อมูลสำหรับส่งออก', style: TextStyle(color: context.colors.errorText)),
+            backgroundColor: context.colors.errorBg),
+      );
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: const Text('กำลังส่งออก Excel...'),
+          content: Text(
+            'กำลังเตรียมไฟล์ Excel...',
+            style: TextStyle(color: context.colors.successBannerText),
+          ),
           backgroundColor: context.colors.successBannerBg),
     );
+
+    try {
+      var excel = Excel.createExcel();
+      Sheet sheetObject = excel['Sheet1'];
+      excel.setDefaultSheet('Sheet1');
+
+      // Add Header
+      sheetObject.appendRow([
+        TextCellValue('วันที่/เวลา'),
+        TextCellValue('จุดที่เก็บ'),
+        TextCellValue('พืช'),
+        TextCellValue('pH'),
+        TextCellValue('ไนโตรเจน (mg/kg)'),
+        TextCellValue('ฟอสฟอรัส (mg/kg)'),
+        TextCellValue('โพแทสเซียม (mg/kg)'),
+        TextCellValue('ความชื้น (%)'),
+        TextCellValue('อุณหภูมิ (°C)'),
+        TextCellValue('EC (dS/m)'),
+        TextCellValue('ความเค็ม (ppt)'),
+      ]);
+
+      // Add Data
+      for (var m in measurements) {
+        String dateStr = m.measuredAt != null 
+            ? '${m.measuredAt!.day}/${m.measuredAt!.month}/${m.measuredAt!.year} ${m.measuredAt!.hour}:${m.measuredAt!.minute.toString().padLeft(2, '0')}' 
+            : '-';
+        
+        sheetObject.appendRow([
+          TextCellValue(dateStr),
+          TextCellValue(m.pointName ?? '-'),
+          TextCellValue(m.plantName),
+          DoubleCellValue(m.ph),
+          DoubleCellValue(m.nitrogen),
+          DoubleCellValue(m.phosphorus),
+          DoubleCellValue(m.potassium),
+          DoubleCellValue(m.moisture),
+          DoubleCellValue(m.temperature),
+          DoubleCellValue(m.ec),
+          DoubleCellValue(m.salinity),
+        ]);
+      }
+
+      var fileBytes = excel.save();
+      if (fileBytes == null) throw Exception("Failed to save excel file");
+      
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/SoilSensor_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      
+      File file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        await Share.shareXFiles([XFile(filePath)], text: 'ข้อมูลเซ็นเซอร์ดิน');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('เกิดข้อผิดพลาดในการส่งออก: $e', style: TextStyle(color: context.colors.errorText)),
+              backgroundColor: context.colors.errorBg),
+        );
+      }
+    }
   }
 }
 
-class _TabButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
 
-  const _TabButton(
-      {required this.label,
-      required this.icon,
-      required this.selected,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? context.colors.tabSelectedBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 16, color: selected ? context.colors.primaryBtn : context.colors.textMuted),
-              const SizedBox(width: 4),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? context.colors.primaryBtn : context.colors.textMuted)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 

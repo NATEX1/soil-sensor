@@ -42,10 +42,17 @@ class MapBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // 🎨 Custom Colors isolated for Map Bottom Sheet
+    final sheetBgColor = isDark ? const Color(0xFF111827) : Colors.white;
+    final titleColor = isDark ? const Color(0xFFf3f4f6) : const Color(0xFF111827);
+    final subColor = isDark ? const Color(0xFF9ca3af) : const Color(0xFF6b7280);
+
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: context.colors.cardBg,
+        color: sheetBgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -73,7 +80,7 @@ class MapBottomSheet extends StatelessWidget {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: context.colors.textMuted.withValues(alpha: 0.3),
+                        color: subColor.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -90,15 +97,14 @@ class MapBottomSheet extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                          color: context.colors.textNormal,
+                          color: titleColor,
                         ),
                       ),
                       if (selected != null)
                         TextButton(
                           onPressed: () => onSelect(null),
                           style: TextButton.styleFrom(
-                            foregroundColor: context.colors.textMuted,
+                            foregroundColor: subColor,
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -119,10 +125,10 @@ class MapBottomSheet extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_off, size: 40, color: context.colors.textMuted),
+                        Icon(Icons.location_off, size: 40, color: subColor),
                         const SizedBox(height: 8),
                         Text('ยังไม่มีจุดเก็บตัวอย่างที่มีพิกัด GPS',
-                            style: TextStyle(color: context.colors.textMuted)),
+                            style: TextStyle(color: subColor)),
                       ],
                     ),
                   )
@@ -143,12 +149,12 @@ class MapBottomSheet extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: context.colors.cardBg,
+                              color: sheetBgColor,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected
                                     ? context.colors.mapSelectedBorder
-                                    : context.colors.borderColor,
+                                    : subColor.withValues(alpha: 0.05),
                               ),
                             ),
                             child: Row(
@@ -166,7 +172,7 @@ class MapBottomSheet extends StatelessWidget {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
-                                          color: context.colors.textNormal,
+                                          color: titleColor,
                                         ),
                                       ),
                                       if (m.measuredAt != null)
@@ -174,7 +180,7 @@ class MapBottomSheet extends StatelessWidget {
                                           '${m.measuredAt!.day.toString().padLeft(2, '0')}/${m.measuredAt!.month.toString().padLeft(2, '0')}/${m.measuredAt!.year.toString().substring(2)} ${m.measuredAt!.hour.toString().padLeft(2, '0')}:${m.measuredAt!.minute.toString().padLeft(2, '0')}',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: context.colors.textMuted,
+                                            color: subColor,
                                           ),
                                         ),
                                       Text(
@@ -182,7 +188,7 @@ class MapBottomSheet extends StatelessWidget {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                            fontSize: 11, color: context.colors.textMuted),
+                                            fontSize: 11, color: subColor),
                                       ),
                                     ],
                                   ),
@@ -202,7 +208,7 @@ class MapBottomSheet extends StatelessWidget {
                                       'ชื้น ${m.moisture.toStringAsFixed(0)}%',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: context.colors.textMuted,
+                                        color: subColor,
                                       ),
                                     ),
                                   ],

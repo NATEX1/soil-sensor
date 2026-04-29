@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/sensor_data.dart';
-import '../models/calculations.dart';
-import '../theme/app_colors.dart';
+import '../../models/sensor_data.dart';
+import '../../models/calculations.dart';
+import '../../theme/app_colors.dart';
 
 class SensorCard extends StatelessWidget {
   final String label;
