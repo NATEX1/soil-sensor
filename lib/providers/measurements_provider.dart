@@ -3,7 +3,7 @@ import '../models/sensor_data.dart';
 import '../services/database_service.dart';
 import '../services/geocoding_service.dart';
 
-enum DateRange { d7, d30, d90 }
+enum DateRange { d7, d30, d90, all }
 
 extension DateRangeLabel on DateRange {
   String get label {
@@ -14,6 +14,8 @@ extension DateRangeLabel on DateRange {
         return '30 วัน';
       case DateRange.d90:
         return '90 วัน';
+      case DateRange.all:
+        return 'ทั้งหมด';
     }
   }
 
@@ -26,6 +28,8 @@ extension DateRangeLabel on DateRange {
         return now.subtract(const Duration(days: 30));
       case DateRange.d90:
         return now.subtract(const Duration(days: 90));
+      case DateRange.all:
+        return DateTime(2000); // Far past
     }
   }
 }
@@ -35,14 +39,12 @@ class MeasurementsProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   DateRange _dateRange = DateRange.d30;
-  String? _selectedLocation;
   final Map<String, String> _locationNames = {};
 
   List<MeasurementRecord> get measurements => _measurements;
   bool get loading => _loading;
   String? get error => _error;
   DateRange get dateRange => _dateRange;
-  String? get selectedLocation => _selectedLocation;
   
   String getLocationName(String locKey) => _locationNames[locKey] ?? locKey;
 
@@ -56,28 +58,12 @@ class MeasurementsProvider extends ChangeNotifier {
     return locations;
   }
 
-  List<MeasurementRecord> get filteredMeasurements {
-    if (_selectedLocation == null) return _measurements;
-    return _measurements.where((m) {
-      final loc = '${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}';
-      return loc == _selectedLocation;
-    }).toList();
-  }
+  List<MeasurementRecord> get filteredMeasurements => _measurements;
 
   void setDateRange(DateRange range) {
     _dateRange = range;
     notifyListeners();
     fetch();
-  }
-
-  void setLocation(String? location) {
-    _selectedLocation = location;
-    notifyListeners();
-  }
-
-  void clearLocationFilter() {
-    _selectedLocation = null;
-    notifyListeners();
   }
 
   Future<void> fetch() async {

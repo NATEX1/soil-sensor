@@ -22,160 +22,164 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final provider = context.watch<MeasurementsProvider>();
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final maxContentWidth = isTablet ? 800.0 : double.infinity;
 
     return Scaffold(
+      backgroundColor: context.colors.scaffoldBg,
       body: RefreshIndicator(
         color: context.colors.primaryBtn,
         onRefresh: provider.fetch,
-        child: ListView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-          padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, bottomPadding + 24),
-          children: [
-            // — Minimal Header —
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxContentWidth),
+            child: ListView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              padding: EdgeInsets.fromLTRB(
+                isTablet ? 40 : 20, 
+                topPadding + 20, 
+                isTablet ? 40 : 20, 
+                bottomPadding + 24
+              ),
               children: [
-                Column(
+                // — Minimal Header —
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ประวัติการวัด',
-                        style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: context.colors.textNormal,
-                            letterSpacing: -0.5)),
-                    const SizedBox(height: 2),
-                    Text('${provider.filteredMeasurements.length} รายการ',
-                        style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ประวัติการวัด',
+                            style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: context.colors.textNormal,
+                                letterSpacing: -0.5)),
+                        const SizedBox(height: 2),
+                        Text('${provider.filteredMeasurements.length} รายการ',
+                            style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
+                      ],
+                    ),
+                    _buildExportButton(context, provider),
                   ],
                 ),
-                TextButton.icon(
-                  onPressed: provider.filteredMeasurements.isEmpty
-                      ? null
-                      : () => _exportToExcel(context, provider),
-                  style: TextButton.styleFrom(
-                    foregroundColor: context.colors.primaryBtn,
-                    shape: const StadiumBorder(),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  ),
-                  icon: const Icon(Icons.download, size: 16),
-                  label: const Text('Excel',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-                  // Date range filter
-                  Row(
+                const SizedBox(height: 24),
+                
+                // — Date Range Selector (Modern Chips) —
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
                     children: DateRange.values.map((r) {
                       final selected = provider.dateRange == r;
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: 10),
                         child: GestureDetector(
                           onTap: () => provider.setDateRange(r),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                             decoration: BoxDecoration(
                               color: selected ? context.colors.primaryBtn : context.colors.cardBg,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                  color: selected ? context.colors.primaryBtn : context.colors.borderColor),
+                                color: selected ? context.colors.primaryBtn : context.colors.borderColor,
+                                width: 1.5,
+                              ),
+                              boxShadow: selected ? [
+                                BoxShadow(
+                                  color: context.colors.primaryBtn.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                )
+                              ] : [],
                             ),
-                            child: Text(r.label,
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        selected ? Colors.white : context.colors.textMuted)),
+                            child: Text(
+                              r.label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: selected ? Colors.white : context.colors.textMuted,
+                              ),
+                            ),
                           ),
                         ),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 12),
+                ),
+                const SizedBox(height: 24),
 
-                  // Location filter
-                  if (provider.uniqueLocations.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: context.colors.cardBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.colors.borderColor),
-                      ),
-                      child: Row(
+                if (provider.error != null)
+                  ErrorCard(message: provider.error!, onRetry: provider.fetch)
+                else if (provider.loading)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 80),
+                    child: Center(
+                      child: Column(
                         children: [
-                          Icon(Icons.location_on, size: 16, color: context.colors.textMuted),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: provider.selectedLocation,
-                                hint: Text('ทุกตำแหน่ง',
-                                    style: TextStyle(color: context.colors.textMuted)),
-                                isExpanded: true,
-                                icon: Icon(Icons.arrow_drop_down,
-                                    color: context.colors.textMuted),
-                                dropdownColor: context.colors.cardBg,
-                                style: TextStyle(color: context.colors.textNormal),
-                                items: [
-                                  const DropdownMenuItem<String>(
-                                    value: null,
-                                    child: Text('ทุกตำแหน่ง'),
-                                  ),
-                                  ...provider.uniqueLocations.map((loc) {
-                                    return DropdownMenuItem<String>(
-                                      value: loc,
-                                      child: Text(provider.getLocationName(loc),
-                                          style: const TextStyle(fontSize: 13),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis),
-                                    );
-                                  }),
-                                ],
-                                onChanged: (val) => provider.setLocation(val),
-                              ),
-                            ),
+                          CircularProgressIndicator(color: context.colors.primaryBtn, strokeWidth: 3),
+                          const SizedBox(height: 16),
+                          Text('กำลังโหลดข้อมูล...', style: TextStyle(color: context.colors.textMuted, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (provider.filteredMeasurements.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 80),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.history_rounded, size: 64, color: context.colors.textMuted.withValues(alpha: 0.3)),
+                          const SizedBox(height: 16),
+                          Text(
+                            'ไม่พบประวัติการวัด\nในช่วงเวลาที่เลือก',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.colors.textMuted, fontSize: 15, height: 1.5),
                           ),
                         ],
                       ),
                     ),
-                  if (provider.uniqueLocations.isNotEmpty)
-                    const SizedBox(height: 12),
+                  )
+                else
+                  HistoryListView(measurements: provider.filteredMeasurements),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-
-
-                  if (provider.error != null)
-                    ErrorCard(
-                        message: provider.error!, onRetry: provider.fetch),
-
-                  if (provider.loading)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 48),
-                      child: Column(children: [
-                        CircularProgressIndicator(color: context.colors.primaryBtn),
-                        const SizedBox(height: 12),
-                        Text('กำลังโหลดข้อมูล...',
-                            style: TextStyle(color: context.colors.textMuted)),
-                      ]),
-                    )
-                  else if (provider.filteredMeasurements.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 48),
-                      child: Column(children: [
-                        Icon(Icons.inbox_outlined, size: 48, color: context.colors.textMuted),
-                        const SizedBox(height: 12),
-                        Text(
-                            'ยังไม่มีข้อมูลในช่วงเวลานี้\nบันทึกผลการวัดจากแดชบอร์ดก่อน',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: context.colors.textMuted)),
-                      ]),
-                    )
-                  else
-                    HistoryListView(measurements: provider.filteredMeasurements),
-          ],
+  Widget _buildExportButton(BuildContext context, MeasurementsProvider provider) {
+    final isEmpty = provider.filteredMeasurements.isEmpty;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEmpty ? null : () => _exportToExcel(context, provider),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: context.colors.borderColor),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.ios_share_rounded, size: 16, color: isEmpty ? context.colors.textMuted : context.colors.primaryBtn),
+              const SizedBox(width: 6),
+              Text('ส่งออก Excel', 
+                  style: TextStyle(
+                    fontSize: 12, 
+                    fontWeight: FontWeight.w700, 
+                    color: isEmpty ? context.colors.textMuted : context.colors.textNormal
+                  )),
+            ],
+          ),
         ),
       ),
     );

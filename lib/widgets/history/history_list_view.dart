@@ -10,8 +10,29 @@ class HistoryListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    
+    if (isTablet) {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          mainAxisExtent: 180, // Approximate height of _HistoryCard
+        ),
+        itemCount: measurements.length,
+        itemBuilder: (context, index) => _HistoryCard(record: measurements[index]),
+      );
+    }
+
     return Column(
-      children: measurements.map((m) => _HistoryCard(record: m)).toList(),
+      children: measurements.map((m) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _HistoryCard(record: m),
+      )).toList(),
     );
   }
 }
@@ -39,7 +60,6 @@ class _HistoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/recommend', extra: record),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.colors.cardBg,
