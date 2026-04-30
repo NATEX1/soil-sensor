@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/measurements_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../models/sensor_data.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -184,7 +182,7 @@ class MapBottomSheet extends StatelessWidget {
                                           ),
                                         ),
                                       Text(
-                                        context.watch<MeasurementsProvider>().getLocationName('${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}'),
+                                        '${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
