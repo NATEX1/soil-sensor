@@ -216,7 +216,7 @@ class DatabaseService {
 
   static Future<List<Map<String, dynamic>>> getPlants() async {
     final db = await database;
-    return db.query('plants', orderBy: 'name ASC');
+    return db.query('plants', orderBy: 'rowid DESC');
   }
 
   static Future<String> addPlant(String name) async {

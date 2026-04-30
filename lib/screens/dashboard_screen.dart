@@ -474,7 +474,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           builder: (_) => SaveModal(
                             sensorData: activeData,
                             onClose: () => Navigator.of(context).pop(),
-                            onSaved: () => Navigator.of(context).pop(),
+                            onSaved: () {
+                              Navigator.of(context).pop();
+                              context.read<MeasurementsProvider>().fetch();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('บันทึกข้อมูลสำเร็จ', style: TextStyle(color: Colors.white)),
+                                  backgroundColor: Colors.green.shade600,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
                           ),
                         );
                       },
