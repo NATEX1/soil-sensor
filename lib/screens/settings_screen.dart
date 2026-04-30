@@ -153,6 +153,22 @@ class SettingsScreen extends StatelessWidget {
                 isDestructive: true,
                 onTap: () => _clearData(context),
               ),
+              _SettingsItem(
+                icon: Icons.bug_report_outlined,
+                label: 'สร้างข้อมูลทดสอบ (100 รายการ)',
+                onTap: () async {
+                  await DatabaseService.seedDummyData(count: 100);
+                  final db = await DatabaseService.database;
+                  final res = await db.rawQuery('SELECT COUNT(*) as count FROM measurements');
+                  final total = (res.first['count'] as int?) ?? 0;
+                  if (context.mounted) {
+                    context.read<MeasurementsProvider>().fetch();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('สร้างข้อมูลสำเร็จ! ตอนนี้มีทั้งหมด $total รายการ'))
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ],

@@ -31,7 +31,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<MeasurementsProvider>();
     final validPoints =
-        provider.measurements.where((m) => m.lat != 0 || m.lng != 0).toList();
+        provider.mapMeasurements.where((m) => m.lat != 0 || m.lng != 0).toList();
     final topPadding = MediaQuery.of(context).padding.top;
 
     final initialCenter = validPoints.isNotEmpty

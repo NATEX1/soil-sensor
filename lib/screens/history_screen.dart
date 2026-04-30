@@ -80,7 +80,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 color: context.colors.textNormal,
                                 letterSpacing: -0.5)),
                         const SizedBox(height: 2),
-                        Text('${provider.filteredMeasurements.length} รายการ',
+                        Text('${provider.totalCount} รายการ',
                             style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
                       ],
                     ),

@@ -36,25 +36,29 @@ extension DateRangeLabel on DateRange {
 
 class MeasurementsProvider extends ChangeNotifier {
   List<MeasurementRecord> _measurements = [];
+  List<MeasurementRecord> _mapMeasurements = [];
   bool _loading = false;
   bool _loadingMore = false;
   bool _hasMore = true;
   int _pageSize = 15;
+  int _totalCount = 0;
   String? _error;
   DateRange _dateRange = DateRange.d30;
   final Map<String, String> _locationNames = {};
 
   List<MeasurementRecord> get measurements => _measurements;
+  List<MeasurementRecord> get mapMeasurements => _mapMeasurements;
   bool get loading => _loading;
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
   String? get error => _error;
   DateRange get dateRange => _dateRange;
+  int get totalCount => _totalCount;
   
   String getLocationName(String locKey) => _locationNames[locKey] ?? locKey;
 
   List<String> get uniqueLocations {
-    final locations = _measurements
+    final locations = _mapMeasurements
         .where((m) => m.lat != 0 || m.lng != 0)
         .map((m) => '${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}')
         .toSet()
@@ -77,10 +81,21 @@ class MeasurementsProvider extends ChangeNotifier {
     _hasMore = true;
     notifyListeners();
     try {
+      final db = await DatabaseService.database;
+      final countRes = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM measurements WHERE measured_at >= ?',
+        [_dateRange.fromDate.toIso8601String()]
+      );
+      _totalCount = (countRes.first['count'] as int?) ?? 0;
+
       _measurements = await DatabaseService.getMeasurements(
         from: _dateRange.fromDate,
         limit: _pageSize,
         offset: 0,
+      );
+      
+      _mapMeasurements = await DatabaseService.getMeasurements(
+        from: _dateRange.fromDate,
       );
       _hasMore = _measurements.length >= _pageSize;
       _resolveLocationNames();

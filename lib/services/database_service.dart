@@ -240,6 +240,7 @@ class DatabaseService {
     return 0;
   }
 
+
   static Future<void> deletePlant(String id) async {
     final db = await database;
     
@@ -298,7 +299,8 @@ class DatabaseService {
     final batch = db.batch();
 
     for (int i = 0; i < count; i++) {
-      final id = 'seed_${i}_${now.millisecondsSinceEpoch}';
+      final timestamp = DateTime.now().microsecondsSinceEpoch;
+      final id = 'seed_${timestamp}_$i';
       final measuredAt = now.subtract(
           Duration(days: _ri(0, 89), hours: _ri(0, 23), minutes: _ri(0, 59)));
       final lat = 13.7 + _random.nextDouble() * 0.5;
