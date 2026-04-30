@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/sensor_data.dart';
 import '../services/database_service.dart';
-import '../services/geocoding_service.dart';
+
+// ─── Date Range Filter ───────────────────────────────────────────────
 
 enum DateRange { d7, d30, d90, all }
 
@@ -29,45 +30,41 @@ extension DateRangeLabel on DateRange {
       case DateRange.d90:
         return now.subtract(const Duration(days: 90));
       case DateRange.all:
-        return DateTime(2000); // Far past
+        return DateTime(2000);
     }
   }
 }
 
+// ─── Provider ────────────────────────────────────────────────────────
+
 class MeasurementsProvider extends ChangeNotifier {
+  static const int _pageSize = 15;
+
+  // — Paginated list (for History screen) —
   List<MeasurementRecord> _measurements = [];
-  List<MeasurementRecord> _mapMeasurements = [];
+
+  // — Full list (for Map / Dashboard / Export) —
+  List<MeasurementRecord> _allMeasurements = [];
+
+  // — State —
   bool _loading = false;
   bool _loadingMore = false;
   bool _hasMore = true;
-  int _pageSize = 15;
   int _totalCount = 0;
   String? _error;
   DateRange _dateRange = DateRange.d30;
-  final Map<String, String> _locationNames = {};
 
+  // — Getters —
   List<MeasurementRecord> get measurements => _measurements;
-  List<MeasurementRecord> get mapMeasurements => _mapMeasurements;
+  List<MeasurementRecord> get allMeasurements => _allMeasurements;
   bool get loading => _loading;
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
+  int get totalCount => _totalCount;
   String? get error => _error;
   DateRange get dateRange => _dateRange;
-  int get totalCount => _totalCount;
-  
-  String getLocationName(String locKey) => _locationNames[locKey] ?? locKey;
 
-  List<String> get uniqueLocations {
-    final locations = _mapMeasurements
-        .where((m) => m.lat != 0 || m.lng != 0)
-        .map((m) => '${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}')
-        .toSet()
-        .toList();
-    locations.sort();
-    return locations;
-  }
-
-  List<MeasurementRecord> get filteredMeasurements => _measurements;
+  // — Actions —
 
   void setDateRange(DateRange range) {
     _dateRange = range;
@@ -75,30 +72,35 @@ class MeasurementsProvider extends ChangeNotifier {
     fetch();
   }
 
+  /// Initial fetch: loads first page + full list for map/export, counts total.
   Future<void> fetch() async {
     _loading = true;
     _error = null;
     _hasMore = true;
     notifyListeners();
+
     try {
+      // Count total records in the selected range
       final db = await DatabaseService.database;
       final countRes = await db.rawQuery(
         'SELECT COUNT(*) as count FROM measurements WHERE measured_at >= ?',
-        [_dateRange.fromDate.toIso8601String()]
+        [_dateRange.fromDate.toIso8601String()],
       );
       _totalCount = (countRes.first['count'] as int?) ?? 0;
 
+      // Paginated list (first page)
       _measurements = await DatabaseService.getMeasurements(
         from: _dateRange.fromDate,
         limit: _pageSize,
         offset: 0,
       );
-      
-      _mapMeasurements = await DatabaseService.getMeasurements(
+
+      // Full list (map pins, export, dashboard)
+      _allMeasurements = await DatabaseService.getMeasurements(
         from: _dateRange.fromDate,
       );
+
       _hasMore = _measurements.length >= _pageSize;
-      _resolveLocationNames();
     } catch (e) {
       _error = 'เกิดข้อผิดพลาดในการโหลดประวัติข้อมูล';
     } finally {
@@ -107,10 +109,12 @@ class MeasurementsProvider extends ChangeNotifier {
     }
   }
 
+  /// Load next page (infinite scroll).
   Future<void> fetchMore() async {
     if (_loadingMore || !_hasMore) return;
     _loadingMore = true;
     notifyListeners();
+
     try {
       final more = await DatabaseService.getMeasurements(
         from: _dateRange.fromDate,
@@ -122,34 +126,22 @@ class MeasurementsProvider extends ChangeNotifier {
       } else {
         _measurements.addAll(more);
         _hasMore = more.length >= _pageSize;
-        _resolveLocationNames();
       }
-    } catch (e) {
-      // Keep existing data
+    } catch (_) {
+      // Silently fail — keep existing data visible
     } finally {
       _loadingMore = false;
       notifyListeners();
     }
   }
 
-  void _resolveLocationNames() async {
-    for (final loc in uniqueLocations) {
-      if (_locationNames.containsKey(loc)) continue;
-      try {
-        final parts = loc.split(', ');
-        final lat = double.parse(parts[0]);
-        final lng = double.parse(parts[1]);
-        final address = await GeocodingService.getAddress(lat, lng);
-        _locationNames[loc] = address;
-        notifyListeners();
-      } catch (_) {}
-    }
-  }
-
+  /// Delete a single measurement.
   Future<void> remove(String id) async {
     try {
       await DatabaseService.deleteMeasurement(id);
       _measurements = _measurements.where((m) => m.id != id).toList();
+      _allMeasurements = _allMeasurements.where((m) => m.id != id).toList();
+      _totalCount = (_totalCount - 1).clamp(0, _totalCount);
       notifyListeners();
     } catch (e) {
       _error = 'เกิดข้อผิดพลาดในการลบข้อมูล';

@@ -55,7 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.sensorData != null) return ble.sensorData!;
     if (ble.isConnected && ble.sensorData != null) return ble.sensorData!;
     if (wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
-    final saved = measurements.filteredMeasurements;
+    final saved = measurements.allMeasurements;
     if (saved.isNotEmpty) return saved.first;
     return const _DefaultSensorData();
   }
@@ -65,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
     if (ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
     if (wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
-    final saved = measurements.filteredMeasurements;
+    final saved = measurements.allMeasurements;
     if (saved.isNotEmpty && saved.first.measuredAt != null) return saved.first.measuredAt;
     return null;
   }
@@ -102,7 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isAnyConnected = ble.isConnected || wifi.isConnected;
     final hasRealData = (ble.isConnected && ble.sensorData != null) || 
                         (wifi.isConnected && wifi.sensorData != null) ||
-                        measurements.filteredMeasurements.isNotEmpty;
+                        measurements.allMeasurements.isNotEmpty;
     final activeLastUpdate = _getActiveLastUpdate(ble, wifi, measurements);
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;

@@ -149,7 +149,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                else if (provider.filteredMeasurements.isEmpty)
+                else if (provider.measurements.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 80),
                     child: Center(
@@ -167,7 +167,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   )
                 else ...[
-                  HistoryListView(measurements: provider.filteredMeasurements),
+                  HistoryListView(measurements: provider.measurements),
                   if (provider.loadingMore)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -175,7 +175,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: CircularProgressIndicator(color: context.colors.primaryBtn, strokeWidth: 2),
                       ),
                     ),
-                  if (!provider.hasMore && provider.filteredMeasurements.length > 5)
+                  if (!provider.hasMore && provider.measurements.length > 5)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
@@ -195,7 +195,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildExportButton(BuildContext context, MeasurementsProvider provider) {
-    final isEmpty = provider.filteredMeasurements.isEmpty;
+    final isEmpty = provider.allMeasurements.isEmpty;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -227,7 +227,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _exportToExcel(
       BuildContext context, MeasurementsProvider provider) async {
-    final measurements = provider.filteredMeasurements;
+    final measurements = provider.allMeasurements;
     if (measurements.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
