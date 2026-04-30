@@ -17,6 +17,27 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      context.read<MeasurementsProvider>().fetchMore();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<MeasurementsProvider>();
@@ -35,6 +56,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
             child: ListView(
+              controller: _scrollController,
               physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: EdgeInsets.fromLTRB(
                 isTablet ? 40 : 20, 
@@ -144,8 +166,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                else
+                else ...[
                   HistoryListView(measurements: provider.filteredMeasurements),
+                  if (provider.loadingMore)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: CircularProgressIndicator(color: context.colors.primaryBtn, strokeWidth: 2),
+                      ),
+                    ),
+                  if (!provider.hasMore && provider.filteredMeasurements.length > 5)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          '— สิ้นสุดรายการ —',
+                          style: TextStyle(color: context.colors.textMuted, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),

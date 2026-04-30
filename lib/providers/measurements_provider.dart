@@ -37,12 +37,17 @@ extension DateRangeLabel on DateRange {
 class MeasurementsProvider extends ChangeNotifier {
   List<MeasurementRecord> _measurements = [];
   bool _loading = false;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _pageSize = 15;
   String? _error;
   DateRange _dateRange = DateRange.d30;
   final Map<String, String> _locationNames = {};
 
   List<MeasurementRecord> get measurements => _measurements;
   bool get loading => _loading;
+  bool get loadingMore => _loadingMore;
+  bool get hasMore => _hasMore;
   String? get error => _error;
   DateRange get dateRange => _dateRange;
   
@@ -69,15 +74,45 @@ class MeasurementsProvider extends ChangeNotifier {
   Future<void> fetch() async {
     _loading = true;
     _error = null;
+    _hasMore = true;
     notifyListeners();
     try {
-      _measurements =
-          await DatabaseService.getMeasurements(from: _dateRange.fromDate);
+      _measurements = await DatabaseService.getMeasurements(
+        from: _dateRange.fromDate,
+        limit: _pageSize,
+        offset: 0,
+      );
+      _hasMore = _measurements.length >= _pageSize;
       _resolveLocationNames();
     } catch (e) {
       _error = 'เกิดข้อผิดพลาดในการโหลดประวัติข้อมูล';
     } finally {
       _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchMore() async {
+    if (_loadingMore || !_hasMore) return;
+    _loadingMore = true;
+    notifyListeners();
+    try {
+      final more = await DatabaseService.getMeasurements(
+        from: _dateRange.fromDate,
+        limit: _pageSize,
+        offset: _measurements.length,
+      );
+      if (more.isEmpty) {
+        _hasMore = false;
+      } else {
+        _measurements.addAll(more);
+        _hasMore = more.length >= _pageSize;
+        _resolveLocationNames();
+      }
+    } catch (e) {
+      // Keep existing data
+    } finally {
+      _loadingMore = false;
       notifyListeners();
     }
   }

@@ -187,6 +187,7 @@ class DatabaseService {
     DateTime? from,
     DateTime? to,
     int? limit,
+    int? offset,
   }) async {
     final db = await database;
     String where = '';
@@ -209,6 +210,7 @@ class DatabaseService {
       ${where.isNotEmpty ? 'WHERE $where' : ''}
       ORDER BY m.measured_at DESC
       ${limit != null ? 'LIMIT $limit' : ''}
+      ${offset != null ? 'OFFSET $offset' : ''}
     ''', whereArgs.isNotEmpty ? whereArgs : null);
 
     return rows.map((row) => _rowToRecord(row)).toList();
