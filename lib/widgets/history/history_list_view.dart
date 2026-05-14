@@ -5,8 +5,9 @@ import '../../models/sensor_data.dart';
 import '../../models/calculations.dart';
 
 class HistoryListView extends StatelessWidget {
-  final List<MeasurementRecord> measurements;
-  const HistoryListView({super.key, required this.measurements});
+  final List<PlotRecord> plots;
+  final void Function(String plotId)? onDelete;
+  const HistoryListView({super.key, required this.plots, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -21,44 +22,46 @@ class HistoryListView extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          mainAxisExtent: 180, // Approximate height of _HistoryCard
+          mainAxisExtent: 180,
         ),
-        itemCount: measurements.length,
-        itemBuilder: (context, index) => _HistoryCard(record: measurements[index]),
+        itemCount: plots.length,
+        itemBuilder: (context, index) => _buildCard(context, plots[index]),
       );
     }
 
     return Column(
-      children: measurements.map((m) => Padding(
+      children: plots.map((p) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: _HistoryCard(record: m),
+        child: _buildCard(context, p),
       )).toList(),
     );
+  }
+
+  Widget _buildCard(BuildContext context, PlotRecord plot) {
+    return _HistoryCard(plot: plot);
   }
 }
 
 class _HistoryCard extends StatelessWidget {
-  final MeasurementRecord record;
-  const _HistoryCard({required this.record});
+  final PlotRecord plot;
+  const _HistoryCard({required this.plot});
 
   @override
   Widget build(BuildContext context) {
-    final date = record.measuredAt;
-    final dateStr = date != null
-        ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
-        : '--';
+    final date = plot.createdAt;
+    final dateStr = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
     // Count abnormal values
     final abnormalKeys = <String>[];
     for (final key in ['ph', 'nitrogen', 'phosphorus', 'potassium', 'moisture', 'temperature', 'ec', 'salinity']) {
-      final status = getSoilStatus(key, record[key]);
+      final status = getSoilStatus(key, plot[key]);
       if (status != SoilStatus.normal) {
         abnormalKeys.add(key);
       }
     }
 
     return GestureDetector(
-      onTap: () => context.push('/recommend', extra: record),
+      onTap: () => context.push('/recommend', extra: plot),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -69,13 +72,13 @@ class _HistoryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top row: point name + date
+            // Top row: plot name
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
-                    record.pointName?.isNotEmpty == true ? record.pointName! : 'ไม่ระบุจุด',
+                    plot.name,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -90,16 +93,16 @@ class _HistoryCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
 
-            // Date and plant
+            // Date and measurement count
             Row(
               children: [
                 Icon(Icons.access_time, size: 13, color: context.colors.textMuted),
                 const SizedBox(width: 4),
                 Text(dateStr, style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
                 const SizedBox(width: 12),
-                Icon(Icons.eco, size: 13, color: context.colors.primaryBtn),
+                Icon(Icons.format_list_numbered, size: 13, color: context.colors.primaryBtn),
                 const SizedBox(width: 4),
-                Text(record.plantName,
+                Text('${plot.measurementCount} จุด',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primaryBtn)),
               ],
             ),
@@ -110,11 +113,12 @@ class _HistoryCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _SensorChip(label: 'pH', value: record.ph.toStringAsFixed(1), status: getSoilStatus('ph', record.ph)),
-                _SensorChip(label: 'N', value: record.nitrogen.round().toString(), status: getSoilStatus('nitrogen', record.nitrogen)),
-                _SensorChip(label: 'P', value: record.phosphorus.round().toString(), status: getSoilStatus('phosphorus', record.phosphorus)),
-                _SensorChip(label: 'K', value: record.potassium.round().toString(), status: getSoilStatus('potassium', record.potassium)),
-                _SensorChip(label: 'ชื้น', value: '${record.moisture.round()}%', status: getSoilStatus('moisture', record.moisture)),
+                _SensorChip(label: 'pH', value: plot.ph.toStringAsFixed(1), status: getSoilStatus('ph', plot.ph)),
+                _SensorChip(label: 'N', value: plot.nitrogen.round().toString(), status: getSoilStatus('nitrogen', plot.nitrogen)),
+                _SensorChip(label: 'P', value: plot.phosphorus.round().toString(), status: getSoilStatus('phosphorus', plot.phosphorus)),
+                _SensorChip(label: 'K', value: plot.potassium.round().toString(), status: getSoilStatus('potassium', plot.potassium)),
+                _SensorChip(label: 'ชื้น', value: '${plot.moisture.round()}%', status: getSoilStatus('moisture', plot.moisture)),
+                _SensorChip(label: 'EC', value: plot.ec.toStringAsFixed(1), status: getSoilStatus('ec', plot.ec)),
               ],
             ),
 
@@ -134,7 +138,7 @@ class _HistoryCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'มี ${abnormalKeys.length} ค่าที่ผิดปกติ — กดเพื่อดูคำแนะนำ',
+                        'มี ${abnormalKeys.length} ค่าเฉลี่ยที่ผิดปกติ — กดเพื่อดูคำแนะนำ',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.colors.warningOrange),
                       ),
                     ),

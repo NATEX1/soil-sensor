@@ -5,8 +5,11 @@ import 'package:excel/excel.dart' hide Border;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/measurements_provider.dart';
+import '../providers/plot_provider.dart';
 import '../widgets/common/error_card.dart';
 import '../widgets/history/history_list_view.dart';
+import '../widgets/history/history_chart.dart';
+import '../models/sensor_data.dart';
 import '../theme/app_colors.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -134,6 +137,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // — Historical Trend Chart —
+                if (provider.allPlots.length >= 2)
+                  HistoryChart(plots: provider.allPlots),
+                if (provider.allPlots.length >= 2)
+                  const SizedBox(height: 24),
+
                 if (provider.error != null)
                   ErrorCard(message: provider.error!, onRetry: provider.fetch)
                 else if (provider.loading)
@@ -149,7 +158,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                else if (provider.measurements.isEmpty)
+                else if (provider.plots.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 80),
                     child: Center(
@@ -167,7 +176,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   )
                 else ...[
-                  HistoryListView(measurements: provider.measurements),
+                  HistoryListView(
+                    plots: provider.plots,
+                    onDelete: (id) {
+                      provider.remove(id);
+                      context.read<PlotProvider>().loadAvailablePlots();
+                    },
+                  ),
                   if (provider.loadingMore)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -175,7 +190,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: CircularProgressIndicator(color: context.colors.primaryBtn, strokeWidth: 2),
                       ),
                     ),
-                  if (!provider.hasMore && provider.measurements.length > 5)
+                  if (!provider.hasMore && provider.plots.length > 5)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
@@ -195,7 +210,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildExportButton(BuildContext context, MeasurementsProvider provider) {
-    final isEmpty = provider.allMeasurements.isEmpty;
+    final isEmpty = provider.allPlots.isEmpty;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -227,8 +242,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _exportToExcel(
       BuildContext context, MeasurementsProvider provider) async {
-    final measurements = provider.allMeasurements;
-    if (measurements.isEmpty) {
+    final plots = provider.allPlots;
+    if (plots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('ไม่มีข้อมูลสำหรับส่งออก', style: TextStyle(color: context.colors.errorText)),
@@ -255,7 +270,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       sheetObject.appendRow([
         TextCellValue('วันที่/เวลา'),
         TextCellValue('จุดที่เก็บ'),
-        TextCellValue('พืช'),
+        TextCellValue('แปลง'),
+        TextCellValue('วิธีเก็บตัวอย่าง'),
+        TextCellValue('ละติจูด (Lat)'),
+        TextCellValue('ลองจิจูด (Lng)'),
+        TextCellValue('หมายเหตุ'),
         TextCellValue('pH'),
         TextCellValue('ไนโตรเจน (mg/kg)'),
         TextCellValue('ฟอสฟอรัส (mg/kg)'),
@@ -267,24 +286,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ]);
 
       // Add Data
-      for (var m in measurements) {
-        String dateStr = m.measuredAt != null 
-            ? '${m.measuredAt!.day}/${m.measuredAt!.month}/${m.measuredAt!.year} ${m.measuredAt!.hour}:${m.measuredAt!.minute.toString().padLeft(2, '0')}' 
-            : '-';
-        
-        sheetObject.appendRow([
-          TextCellValue(dateStr),
-          TextCellValue(m.pointName ?? '-'),
-          TextCellValue(m.plantName),
-          DoubleCellValue(m.ph),
-          DoubleCellValue(m.nitrogen),
-          DoubleCellValue(m.phosphorus),
-          DoubleCellValue(m.potassium),
-          DoubleCellValue(m.moisture),
-          DoubleCellValue(m.temperature),
-          DoubleCellValue(m.ec),
-          DoubleCellValue(m.salinity),
-        ]);
+      for (var p in plots) {
+        for (var m in p.measurements) {
+          String dateStr = m.measuredAt != null 
+              ? '${m.measuredAt!.day}/${m.measuredAt!.month}/${m.measuredAt!.year} ${m.measuredAt!.hour}:${m.measuredAt!.minute.toString().padLeft(2, '0')}' 
+              : '-';
+          
+          sheetObject.appendRow([
+            TextCellValue(dateStr),
+            TextCellValue(m.pointName ?? '-'),
+            TextCellValue(p.name),
+            TextCellValue(sampleMethodLabels[m.sampleMethod] ?? '-'),
+            DoubleCellValue(m.lat),
+            DoubleCellValue(m.lng),
+            TextCellValue(m.notes ?? '-'),
+            DoubleCellValue(m.ph),
+            DoubleCellValue(m.nitrogen),
+            DoubleCellValue(m.phosphorus),
+            DoubleCellValue(m.potassium),
+            DoubleCellValue(m.moisture),
+            DoubleCellValue(m.temperature),
+            DoubleCellValue(m.ec),
+            DoubleCellValue(m.salinity),
+          ]);
+        }
       }
 
       var fileBytes = excel.save();

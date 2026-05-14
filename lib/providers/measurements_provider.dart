@@ -41,10 +41,10 @@ class MeasurementsProvider extends ChangeNotifier {
   static const int _pageSize = 15;
 
   // — Paginated list (for History screen) —
-  List<MeasurementRecord> _measurements = [];
+  List<PlotRecord> _plots = [];
 
   // — Full list (for Map / Dashboard / Export) —
-  List<MeasurementRecord> _allMeasurements = [];
+  List<PlotRecord> _allPlots = [];
 
   // — State —
   bool _loading = false;
@@ -55,8 +55,8 @@ class MeasurementsProvider extends ChangeNotifier {
   DateRange _dateRange = DateRange.d30;
 
   // — Getters —
-  List<MeasurementRecord> get measurements => _measurements;
-  List<MeasurementRecord> get allMeasurements => _allMeasurements;
+  List<PlotRecord> get plots => _plots;
+  List<PlotRecord> get allPlots => _allPlots;
   bool get loading => _loading;
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
@@ -83,26 +83,26 @@ class MeasurementsProvider extends ChangeNotifier {
       // Count total records in the selected range
       final db = await DatabaseService.database;
       final countRes = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM measurements WHERE measured_at >= ?',
+        'SELECT COUNT(*) as count FROM plots WHERE created_at >= ?',
         [_dateRange.fromDate.toIso8601String()],
       );
       _totalCount = (countRes.first['count'] as int?) ?? 0;
 
       // Paginated list (first page)
-      _measurements = await DatabaseService.getMeasurements(
+      _plots = await DatabaseService.getPlots(
         from: _dateRange.fromDate,
         limit: _pageSize,
         offset: 0,
       );
 
       // Full list (map pins, export, dashboard)
-      _allMeasurements = await DatabaseService.getMeasurements(
+      _allPlots = await DatabaseService.getPlots(
         from: _dateRange.fromDate,
       );
 
-      _hasMore = _measurements.length >= _pageSize;
+      _hasMore = _plots.length >= _pageSize;
     } catch (e) {
-      _error = 'เกิดข้อผิดพลาดในการโหลดประวัติข้อมูล';
+      _error = 'เกิดข้อผิดพลาด: $e';
     } finally {
       _loading = false;
       notifyListeners();
@@ -116,15 +116,15 @@ class MeasurementsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final more = await DatabaseService.getMeasurements(
+      final more = await DatabaseService.getPlots(
         from: _dateRange.fromDate,
         limit: _pageSize,
-        offset: _measurements.length,
+        offset: _plots.length,
       );
       if (more.isEmpty) {
         _hasMore = false;
       } else {
-        _measurements.addAll(more);
+        _plots.addAll(more);
         _hasMore = more.length >= _pageSize;
       }
     } catch (_) {
@@ -135,12 +135,12 @@ class MeasurementsProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete a single measurement.
+  /// Delete a plot.
   Future<void> remove(String id) async {
     try {
-      await DatabaseService.deleteMeasurement(id);
-      _measurements = _measurements.where((m) => m.id != id).toList();
-      _allMeasurements = _allMeasurements.where((m) => m.id != id).toList();
+      await DatabaseService.deletePlot(id);
+      _plots = _plots.where((p) => p.id != id).toList();
+      _allPlots = _allPlots.where((p) => p.id != id).toList();
       _totalCount = (_totalCount - 1).clamp(0, _totalCount);
       notifyListeners();
     } catch (e) {

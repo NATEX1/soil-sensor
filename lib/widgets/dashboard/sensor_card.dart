@@ -52,30 +52,13 @@ class SensorCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.2),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOut,
-                )),
-                child: child,
-              ),
-            ),
-            child: Text(
-              valueText,
-              key: ValueKey(valueText),
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: config.text,
-                  letterSpacing: -0.3),
-            ),
+          Text(
+            valueText,
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: config.text,
+                letterSpacing: -0.3),
           ),
           const Spacer(),
           Text(statusLabels[status]!,

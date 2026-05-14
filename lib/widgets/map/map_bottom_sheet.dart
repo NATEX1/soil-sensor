@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../../models/sensor_data.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../screens/map_screen.dart'; // import PlotMarker
 
 class MapBottomSheet extends StatelessWidget {
-  final List<MeasurementRecord> validPoints;
-  final MeasurementRecord? selected;
+  final List<PlotMarker> plotMarkers;
+  final PlotMarker? selected;
   final MapController mapController;
-  final Function(MeasurementRecord?) onSelect;
+  final Function(PlotMarker?) onSelect;
   final double maxHeight;
   final ValueNotifier<double> sheetFraction;
 
   const MapBottomSheet({
     super.key,
-    required this.validPoints,
+    required this.plotMarkers,
     required this.selected,
     required this.mapController,
     required this.onSelect,
@@ -91,7 +91,7 @@ class MapBottomSheet extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'จุดเก็บตัวอย่าง (${validPoints.length})',
+                        'ข้อมูลแปลง (${plotMarkers.length})',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -118,14 +118,14 @@ class MapBottomSheet extends StatelessWidget {
           
           // List
           Expanded(
-            child: validPoints.isEmpty
+            child: plotMarkers.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_off, size: 40, color: subColor),
+                        Icon(Icons.landscape_rounded, size: 40, color: subColor),
                         const SizedBox(height: 8),
-                        Text('ยังไม่มีจุดเก็บตัวอย่างที่มีพิกัด GPS',
+                        Text('ไม่มีแปลงที่มีพิกัด GPS',
                             style: TextStyle(color: subColor)),
                       ],
                     ),
@@ -133,81 +133,92 @@ class MapBottomSheet extends StatelessWidget {
                 : ListView.builder(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: validPoints.length,
-                    itemBuilder: (_, i) {
-                      final m = validPoints[i];
-                      final isSelected = selected?.id == m.id;
+                    itemCount: plotMarkers.length,
+                    itemBuilder: (_, index) {
+                      final pm = plotMarkers[index];
+                      final plot = pm.plot;
+                      final isSelected = selected?.plot.id == pm.plot.id;
+
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: InkWell(
                           onTap: () {
-                            onSelect(isSelected ? null : m);
-                            mapController.move(LatLng(m.lat, m.lng), 15);
+                            onSelect(isSelected ? null : pm);
+                            mapController.move(LatLng(pm.lat, pm.lng), 15);
                           },
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: sheetBgColor,
-                              borderRadius: BorderRadius.circular(12),
+                              color: isSelected ? context.colors.primaryBtn.withValues(alpha: 0.05) : sheetBgColor,
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? context.colors.mapSelectedBorder
-                                    : subColor.withValues(alpha: 0.05),
+                                    : subColor.withValues(alpha: 0.15),
+                                width: isSelected ? 2 : 1,
                               ),
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.location_on, size: 18, color: context.colors.mapPrimary),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        m.pointName?.isNotEmpty == true
-                                            ? m.pointName!
-                                            : m.plantName,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                          color: titleColor,
-                                        ),
-                                      ),
-                                      if (m.measuredAt != null)
-                                        Text(
-                                          '${m.measuredAt!.day.toString().padLeft(2, '0')}/${m.measuredAt!.month.toString().padLeft(2, '0')}/${m.measuredAt!.year.toString().substring(2)} ${m.measuredAt!.hour.toString().padLeft(2, '0')}:${m.measuredAt!.minute.toString().padLeft(2, '0')}',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: subColor,
-                                          ),
-                                        ),
-                                      Text(
-                                        '${m.lat.toStringAsFixed(4)}, ${m.lng.toStringAsFixed(4)}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            fontSize: 11, color: subColor),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                // Plot Info
+                                Row(
                                   children: [
-                                    Text(
-                                      'pH ${m.ph.toStringAsFixed(1)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: context.colors.phColor,
+                                    Icon(Icons.landscape, size: 20, color: context.colors.primaryBtn),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        plot.name,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          color: isSelected ? context.colors.primaryBtn : titleColor,
+                                        ),
                                       ),
                                     ),
-                                    Text(
-                                      'ชื้น ${m.moisture.toStringAsFixed(0)}%',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: subColor,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: context.colors.primaryBtn.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
+                                      child: Text(
+                                        '${plot.measurementCount} จุด',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: context.colors.primaryBtn,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // Plot Averages
+                                Row(
+                                  children: [
+                                    _buildAvergeChip(context, 'pH', plot.ph.toStringAsFixed(1), context.colors.phColor),
+                                    const SizedBox(width: 8),
+                                    _buildAvergeChip(context, 'ความชื้น', '${plot.moisture.toStringAsFixed(0)}%', Colors.blue),
+                                    const SizedBox(width: 8),
+                                    _buildAvergeChip(context, 'N', plot.nitrogen.toStringAsFixed(0), context.colors.textNormal),
+                                    const SizedBox(width: 8),
+                                    _buildAvergeChip(context, 'P', plot.phosphorus.toStringAsFixed(0), context.colors.textNormal),
+                                    const SizedBox(width: 8),
+                                    _buildAvergeChip(context, 'K', plot.potassium.toStringAsFixed(0), context.colors.textNormal),
+                                  ],
+                                ),
+                                
+                                // Coordinates
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on_outlined, size: 14, color: subColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'พิกัดกึ่งกลาง: ${pm.lat.toStringAsFixed(4)}, ${pm.lng.toStringAsFixed(4)}',
+                                      style: TextStyle(fontSize: 12, color: subColor),
                                     ),
                                   ],
                                 ),
@@ -219,6 +230,23 @@ class MapBottomSheet extends StatelessWidget {
                     },
                   ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvergeChip(BuildContext context, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label ', style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7))),
+          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
         ],
       ),
     );

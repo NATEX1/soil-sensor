@@ -6,6 +6,7 @@ import 'services/ble_service.dart';
 import 'services/wifi_service.dart';
 import 'providers/measurements_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/plot_provider.dart';
 import 'screens/dashboard_screen.dart';
 
 import 'screens/history_screen.dart';
@@ -14,6 +15,7 @@ import 'screens/settings_screen.dart';
 import 'screens/recommend_screen.dart';
 import 'screens/settings/plants_management_screen.dart';
 import 'models/sensor_data.dart';
+import 'screens/cassava_fertilizer_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +32,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => WiFiService()),
         ChangeNotifierProvider(create: (_) => MeasurementsProvider()..fetch()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => PlotProvider()),
       ],
       child: const SoilSensorApp(),
     ),
@@ -76,13 +79,26 @@ final _router = GoRouter(
     GoRoute(
       path: '/recommend',
       pageBuilder: (_, state) => _slidePage(
-        RecommendScreen(record: state.extra as MeasurementRecord?),
+        RecommendScreen(plot: state.extra as PlotRecord?),
         state,
       ),
     ),
     GoRoute(
       path: '/settings/plants',
       pageBuilder: (_, state) => _slidePage(const PlantsManagementScreen(), state),
+    ),
+    GoRoute(
+      path: '/cassava-fertilizer',
+      pageBuilder: (_, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return _slidePage(
+          CassavaFertilizerScreen(
+            plot: args['plot'] as PlotRecord,
+            varietyId: args['varietyId'] as String,
+          ),
+          state,
+        );
+      },
     ),
   ],
 );

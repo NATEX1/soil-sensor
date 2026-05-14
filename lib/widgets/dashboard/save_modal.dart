@@ -1,51 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 import '../../models/sensor_data.dart';
 import '../../services/database_service.dart';
+import '../../providers/plot_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../screens/dashboard/create_plot_screen.dart';
 
 class SaveModal extends StatefulWidget {
   final SensorData? sensorData;
   final VoidCallback onClose;
   final VoidCallback onSaved;
+  final String? groupId;
+  final String? initialPointName;
+  final SampleMethod? initialSampleMethod;
 
   const SaveModal(
       {super.key,
       required this.sensorData,
       required this.onClose,
-      required this.onSaved});
+      required this.onSaved,
+      this.groupId,
+      this.initialPointName,
+      this.initialSampleMethod});
 
   @override
   State<SaveModal> createState() => _SaveModalState();
 }
 
 class _SaveModalState extends State<SaveModal> {
-  String? _selectedPlantId;
   SampleMethod _sampleMethod = SampleMethod.surface0_15;
   final _notesController = TextEditingController();
   final _pointNameController = TextEditingController();
+  final _newPlotNameController = TextEditingController();
   double? _lat;
   double? _lng;
   bool _saving = false;
   bool _locating = false;
   String? _error;
-  List<Map<String, dynamic>> _plants = [];
 
+  // Plot selection
+  PlotRecord? _selectedPlot;
+  bool _showNewPlotField = false;
+  bool _creatingPlot = false;
 
   @override
   void initState() {
     super.initState();
     _getLocation();
-    _loadPlants();
-  }
-
-  Future<void> _loadPlants() async {
-    final plants = await DatabaseService.getPlants();
-    if (mounted) {
-      setState(() {
-        _plants = plants;
-        if (_plants.isNotEmpty && _selectedPlantId == null) {
-          _selectedPlantId = _plants.first['id'] as String;
+    // Pre-fill for re-measure
+    if (widget.initialPointName != null) {
+      _pointNameController.text = widget.initialPointName!;
+    }
+    if (widget.initialSampleMethod != null) {
+      _sampleMethod = widget.initialSampleMethod!;
+    }
+    // If groupId is provided (re-measure), pre-select that plot
+    if (widget.groupId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final plotProvider = context.read<PlotProvider>();
+        final match = plotProvider.availablePlots
+            .where((p) => p.id == widget.groupId)
+            .firstOrNull;
+        if (match != null) {
+          setState(() => _selectedPlot = match);
+        }
+      });
+    } else {
+      // Pre-select the current plot from provider
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final plotProvider = context.read<PlotProvider>();
+        if (plotProvider.currentPlot != null) {
+          setState(() => _selectedPlot = plotProvider.currentPlot);
         }
       });
     }
@@ -55,6 +81,7 @@ class _SaveModalState extends State<SaveModal> {
   void dispose() {
     _notesController.dispose();
     _pointNameController.dispose();
+    _newPlotNameController.dispose();
     super.dispose();
   }
 
@@ -80,17 +107,48 @@ class _SaveModalState extends State<SaveModal> {
     }
   }
 
+  Future<void> _createNewPlot() async {
+    final name = _newPlotNameController.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() => _creatingPlot = true);
+    try {
+      final plotProvider = context.read<PlotProvider>();
+      final newPlot = await plotProvider.startNewPlot(name);
+      if (newPlot != null && mounted) {
+        setState(() {
+          _selectedPlot = newPlot;
+          _showNewPlotField = false;
+          _newPlotNameController.clear();
+        });
+      }
+    } catch (e) {
+      setState(() => _error = 'ไม่สามารถสร้างแปลงได้: $e');
+    } finally {
+      if (mounted) setState(() => _creatingPlot = false);
+    }
+  }
+
   Future<void> _save() async {
     if (widget.sensorData == null) return;
+    if (_selectedPlot == null) {
+      setState(() => _error = 'กรุณาเลือกแปลงก่อนบันทึก');
+      return;
+    }
+    if (_pointNameController.text.trim().isEmpty) {
+      setState(() => _error = 'กรุณาระบุชื่อจุดเก็บตัวอย่าง');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
       await DatabaseService.saveMeasurement(
-        plantId: _selectedPlantId ?? 'rice',
+        plantId: 'tuber_general',
         sampleMethod: _sampleMethod,
         pointName: _pointNameController.text.isEmpty ? null : _pointNameController.text,
+        groupId: _selectedPlot!.id,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         lat: _lat ?? 0,
         lng: _lng ?? 0,
@@ -103,6 +161,10 @@ class _SaveModalState extends State<SaveModal> {
         ec: widget.sensorData!.ec,
         salinity: widget.sensorData!.salinity,
       );
+      // Update the current plot in provider
+      if (mounted) {
+        context.read<PlotProvider>().selectPlot(_selectedPlot!);
+      }
       widget.onSaved();
     } catch (e) {
       setState(() => _error = e.toString());
@@ -111,33 +173,13 @@ class _SaveModalState extends State<SaveModal> {
     }
   }
 
-  Widget _buildChip(String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? context.colors.primaryBtn : context.colors.cardBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: selected
-                  ? context.colors.primaryBtn
-                  : context.colors.borderColor.withValues(alpha: 0.5)),
-        ),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : context.colors.textMuted)),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final plotProvider = context.watch<PlotProvider>();
+    final plots = plotProvider.availablePlots;
+
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,
+      initialChildSize: 0.9,
       maxChildSize: 0.95,
       minChildSize: 0.5,
       builder: (_, controller) => Container(
@@ -204,6 +246,72 @@ class _SaveModalState extends State<SaveModal> {
                         ],
                       ),
                     ),
+
+                  // ═══════════════════════════════════════════
+                  // PLOT SELECTION SECTION
+                  // ═══════════════════════════════════════════
+                  Row(
+                    children: [
+                      Icon(Icons.landscape, size: 16, color: context.colors.primaryBtn),
+                      const SizedBox(width: 6),
+                      Text('เลือกแปลง',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: context.colors.textNormal)),
+                      const Spacer(),
+                      if (_selectedPlot != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: context.colors.primaryBtn.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('เลือกแล้ว ✓',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.colors.primaryBtn)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Existing plots as selectable cards
+                  if (plots.isNotEmpty)
+                    SizedBox(
+                      height: 80,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: plots.length + 1, // +1 for "create new" button
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          // Last item is the "create new" button
+                          if (index == plots.length) {
+                            return _buildCreateNewPlotButton();
+                          }
+                          final plot = plots[index];
+                          final isSelected = _selectedPlot?.id == plot.id;
+                          return _buildPlotCard(plot, isSelected);
+                        },
+                      ),
+                    )
+                  else
+                    // No plots yet — show create button prominently
+                    _buildEmptyPlotState(),
+
+                  // Inline new plot creation field
+                  if (_showNewPlotField) ...[
+                    const SizedBox(height: 12),
+                    _buildNewPlotInput(),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // ═══════════════════════════════════════════
+                  // POINT NAME
+                  // ═══════════════════════════════════════════
                   Text('ชื่อจุดเก็บตัวอย่าง',
                       style: TextStyle(
                           fontSize: 13,
@@ -230,32 +338,12 @@ class _SaveModalState extends State<SaveModal> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
+
                   const SizedBox(height: 24),
-                  Text('ชนิดพืช',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: context.colors.textNormal)),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ..._plants.map((p) {
-                        return _buildChip(
-                          p['name'] as String,
-                          _selectedPlantId == p['id'],
-                          () => setState(() => _selectedPlantId = p['id'] as String),
-                        );
-                      }),
-                      _buildChip(
-                        '+ เพิ่มชนิดพืชอื่น',
-                        false,
-                        _showAddPlantDialog,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+
+                  // ═══════════════════════════════════════════
+                  // SAMPLE METHOD
+                  // ═══════════════════════════════════════════
                   Text('วิธีเก็บตัวอย่าง',
                       style: TextStyle(
                           fontSize: 13,
@@ -286,7 +374,12 @@ class _SaveModalState extends State<SaveModal> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 24),
+
+                  // ═══════════════════════════════════════════
+                  // NOTES
+                  // ═══════════════════════════════════════════
                   Text('หมายเหตุ',
                       style: TextStyle(
                           fontSize: 13,
@@ -314,7 +407,12 @@ class _SaveModalState extends State<SaveModal> {
                       contentPadding: const EdgeInsets.all(16),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // ═══════════════════════════════════════════
+                  // LOCATION
+                  // ═══════════════════════════════════════════
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -341,7 +439,12 @@ class _SaveModalState extends State<SaveModal> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 24),
+
+                  // ═══════════════════════════════════════════
+                  // ACTION BUTTONS
+                  // ═══════════════════════════════════════════
                   Row(
                     children: [
                       Expanded(
@@ -359,9 +462,10 @@ class _SaveModalState extends State<SaveModal> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: _saving ? null : _save,
+                          onPressed: (_saving || _selectedPlot == null) ? null : _save,
                           style: FilledButton.styleFrom(
                             backgroundColor: context.colors.primaryBtn,
+                            disabledBackgroundColor: context.colors.textMuted.withValues(alpha: 0.15),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),
@@ -388,47 +492,244 @@ class _SaveModalState extends State<SaveModal> {
     );
   }
 
-  Future<void> _showAddPlantDialog() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.colors.cardBg,
-        title: Text('เพิ่มชนิดพืชอื่น', style: TextStyle(color: context.colors.textNormal, fontSize: 18, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          style: TextStyle(color: context.colors.textNormal),
-          decoration: InputDecoration(
-            hintText: 'เช่น มะม่วง, ทุเรียน, etc.',
-            hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
-            filled: true,
-            fillColor: Theme.of(context).scaffoldBackgroundColor,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  // ─── Plot Card ──────────────────────────────────────────────────────
+
+  Widget _buildPlotCard(PlotRecord plot, bool isSelected) {
+    final dateStr = '${plot.createdAt.day.toString().padLeft(2, '0')}/${plot.createdAt.month.toString().padLeft(2, '0')}/${plot.createdAt.year}';
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedPlot = plot;
+        _showNewPlotField = false;
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 160,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? context.colors.primaryBtn.withValues(alpha: 0.12)
+              : context.colors.cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? context.colors.primaryBtn
+                : context.colors.borderColor.withValues(alpha: 0.5),
+            width: isSelected ? 2 : 1,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isSelected ? Icons.check_circle : Icons.landscape,
+                  size: 16,
+                  color: isSelected ? context.colors.primaryBtn : context.colors.textMuted,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    plot.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? context.colors.primaryBtn : context.colors.textNormal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  dateStr,
+                  style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: context.colors.primaryBtn.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${plot.measurementCount} จุด',
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.primaryBtn),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Create New Plot Button ─────────────────────────────────────────
+
+  Widget _buildCreateNewPlotButton() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreatePlotScreen()),
+        );
+        if (result == true) {
+          if (!mounted) return;
+          // The PlotProvider was updated, the newest plot is now at index 0.
+          // We can auto-select it.
+          final plots = context.read<PlotProvider>().availablePlots;
+          if (plots.isNotEmpty) {
+            setState(() {
+              _selectedPlot = plots.first;
+              _showNewPlotField = false;
+            });
+          }
+        }
+      },
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.colors.cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: context.colors.borderColor.withValues(alpha: 0.5),
+            style: BorderStyle.solid,
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            style: FilledButton.styleFrom(backgroundColor: context.colors.primaryBtn),
-            child: const Text('บันทึก'),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_circle_outline, size: 24, color: context.colors.primaryBtn),
+            const SizedBox(height: 6),
+            Text('สร้างแปลงใหม่',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.primaryBtn),
+                textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Empty State (No Plots) ─────────────────────────────────────────
+
+  Widget _buildEmptyPlotState() {
+    return GestureDetector(
+      onTap: () => setState(() => _showNewPlotField = true),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: context.colors.primaryBtn.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.colors.primaryBtn.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.add_location_alt_outlined, size: 36, color: context.colors.primaryBtn),
+            const SizedBox(height: 8),
+            Text('ยังไม่มีแปลง',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textNormal)),
+            const SizedBox(height: 4),
+            Text('กดเพื่อสร้างแปลงแรกของคุณ',
+                style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── New Plot Input ─────────────────────────────────────────────────
+
+  Widget _buildNewPlotInput() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.colors.primaryBtn.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.colors.primaryBtn.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('สร้างแปลงใหม่',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.primaryBtn)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newPlotNameController,
+                  autofocus: true,
+                  style: TextStyle(fontSize: 14, color: context.colors.textNormal),
+                  decoration: InputDecoration(
+                    hintText: 'ชื่อแปลง เช่น แปลงมันสำปะหลัง',
+                    hintStyle: TextStyle(
+                        color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 13),
+                    filled: true,
+                    fillColor: context.colors.cardBg,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.primaryBtn)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _createNewPlot(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                height: 44,
+                child: FilledButton(
+                  onPressed: _creatingPlot ? null : _createNewPlot,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.colors.primaryBtn,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _creatingPlot
+                      ? const SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('สร้าง', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => setState(() => _showNewPlotField = false),
+            child: Text('ยกเลิก',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.textMuted,
+                    decoration: TextDecoration.underline)),
           ),
         ],
       ),
     );
-
-    if (name != null && name.isNotEmpty) {
-      final id = await DatabaseService.addPlant(name);
-      await _loadPlants();
-      if (mounted) {
-        setState(() {
-          _selectedPlantId = id;
-        });
-      }
-    }
   }
 }

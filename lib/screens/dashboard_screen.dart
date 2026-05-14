@@ -13,6 +13,7 @@ import '../widgets/dashboard/info_row.dart';
 import '../widgets/dashboard/scan_animation.dart';
 import '../widgets/dashboard/mode_tab.dart';
 import '../widgets/dashboard/device_card.dart';
+import '../providers/plot_provider.dart';
 
 const _sensorKeys = [
   ('ph', 'pH', ''),
@@ -50,23 +51,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  SensorData _getActiveData(BleService ble, WiFiService wifi, MeasurementsProvider measurements) {
+  SensorData _getActiveData(BleService ble, WiFiService wifi, PlotProvider plot) {
     if (_connectionMode == ConnectionMode.wifi && wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
     if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.sensorData != null) return ble.sensorData!;
     if (ble.isConnected && ble.sensorData != null) return ble.sensorData!;
     if (wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
-    final saved = measurements.allMeasurements;
-    if (saved.isNotEmpty) return saved.first;
+    
+    // Show plot average if no live connection
+    if (plot.currentPlot != null && plot.currentPlot!.measurements.isNotEmpty) {
+      return plot.currentPlot!;
+    }
+    
     return const _DefaultSensorData();
   }
 
-  DateTime? _getActiveLastUpdate(BleService ble, WiFiService wifi, MeasurementsProvider measurements) {
+  DateTime? _getActiveLastUpdate(BleService ble, WiFiService wifi, PlotProvider plot) {
     if (_connectionMode == ConnectionMode.wifi && wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
     if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
     if (ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
     if (wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
-    final saved = measurements.allMeasurements;
-    if (saved.isNotEmpty && saved.first.measuredAt != null) return saved.first.measuredAt;
+    
+    if (plot.currentPlot != null && plot.currentPlot!.measurements.isNotEmpty) {
+       return plot.currentPlot!.measurements.first.measuredAt;
+    }
     return null;
   }
 
@@ -96,14 +103,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final ble = context.watch<BleService>();
     final wifi = context.watch<WiFiService>();
-    final measurements = context.watch<MeasurementsProvider>();
-    final activeData = _getActiveData(ble, wifi, measurements);
+    final plotProvider = context.watch<PlotProvider>();
+    final activeData = _getActiveData(ble, wifi, plotProvider);
     
     final isAnyConnected = ble.isConnected || wifi.isConnected;
     final hasRealData = (ble.isConnected && ble.sensorData != null) || 
                         (wifi.isConnected && wifi.sensorData != null) ||
-                        measurements.allMeasurements.isNotEmpty;
-    final activeLastUpdate = _getActiveLastUpdate(ble, wifi, measurements);
+                        (plotProvider.currentPlot != null && plotProvider.currentPlot!.measurements.isNotEmpty);
+    final activeLastUpdate = _getActiveLastUpdate(ble, wifi, plotProvider);
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -432,15 +439,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 4),
 
               // — Sensor Grid —
-              Text('ค่าเซ็นเซอร์',
+              Text('ค่าเซ็นเซอร์ (เฉลี่ยของแปลง หรือ ค่าสด)',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: context.colors.textNormal)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
@@ -474,16 +481,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           builder: (_) => SaveModal(
                             sensorData: activeData,
                             onClose: () => Navigator.of(context).pop(),
-                            onSaved: () {
+                            onSaved: () async {
                               Navigator.of(context).pop();
-                              context.read<MeasurementsProvider>().fetch();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text('บันทึกข้อมูลสำเร็จ', style: TextStyle(color: Colors.white)),
-                                  backgroundColor: Colors.green.shade600,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              await plotProvider.refreshCurrentPlot();
+                              if (context.mounted) {
+                                context.read<MeasurementsProvider>().fetch();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('บันทึกข้อมูลสำเร็จ', style: TextStyle(color: Colors.white)),
+                                    backgroundColor: Colors.green.shade600,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
                             },
                           ),
                         );
@@ -502,7 +512,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => context.push('/recommend'),
+                      onPressed: () {
+                         if (plotProvider.currentPlot == null || plotProvider.currentPlot!.measurements.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('กรุณาบันทึกค่าอย่างน้อย 1 จุดในแปลงก่อนดูคำแนะนำ'))
+                            );
+                            return;
+                         }
+                         context.push('/recommend', extra: plotProvider.currentPlot);
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.colors.primaryBtn,
                         side: BorderSide(color: context.colors.borderColor),

@@ -19,6 +19,7 @@ class WiFiService extends ChangeNotifier {
   DateTime? _lastUpdate;
   String? _error;
   Timer? _pollingTimer;
+  bool _isFetching = false;
 
   String? get deviceIp => _deviceIp;
   bool get isConnected => _isConnected;
@@ -145,7 +146,6 @@ class WiFiService extends ChangeNotifier {
       _error = _getFriendlyErrorMessage('ไม่สามารถเชื่อมต่อได้', e);
       _isConnected = false;
       notifyListeners();
-      rethrow;
     }
   }
 
@@ -161,7 +161,7 @@ class WiFiService extends ChangeNotifier {
   void _startPolling() {
     _stopPolling();
     _pollingTimer = Timer.periodic(
-      const Duration(seconds: 2),
+      const Duration(seconds: 3),
       (_) => _fetchSensorData(),
     );
   }
@@ -172,14 +172,14 @@ class WiFiService extends ChangeNotifier {
     _pollingTimer = null;
   }
 
-  /// Fetch sensor data from device
   Future<void> _fetchSensorData() async {
-    if (_deviceIp == null || !_isConnected) return;
+    if (_deviceIp == null || !_isConnected || _isFetching) return;
 
+    _isFetching = true;
     try {
       final response = await http
           .get(Uri.parse('http://$_deviceIp:$_port$apiEndpoint'))
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         _parseSensorData(response.body);
@@ -190,6 +190,8 @@ class WiFiService extends ChangeNotifier {
       _error = 'การเชื่อมต่อขาดหาย กรุณาตรวจสอบเครือข่าย WiFi';
       _isConnected = false;
       _stopPolling();
+    } finally {
+      _isFetching = false;
     }
     notifyListeners();
   }

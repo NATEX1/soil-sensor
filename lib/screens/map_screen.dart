@@ -16,8 +16,15 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
+class PlotMarker {
+  final PlotRecord plot;
+  final double lat;
+  final double lng;
+  PlotMarker(this.plot, this.lat, this.lng);
+}
+
 class _MapScreenState extends State<MapScreen> {
-  MeasurementRecord? _selected;
+  PlotMarker? _selected;
   final MapController _mapController = MapController();
   final ValueNotifier<double> _sheetFraction = ValueNotifier(0.35);
 
@@ -30,12 +37,49 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<MeasurementsProvider>();
-    final validPoints =
-        provider.allMeasurements.where((m) => m.lat != 0 || m.lng != 0).toList();
+    
+    // Create PlotMarkers (Centroid of each plot)
+    final plotMarkers = <PlotMarker>[];
+    for (var p in provider.allPlots) {
+      final validMeasurements = p.measurements.toList(); // เอาทุกจุด ไม่กรอง 0 ออก
+      if (validMeasurements.isEmpty) continue;
+
+      double sumLat = 0;
+      double sumLng = 0;
+      int validCount = 0;
+
+      for (var m in validMeasurements) {
+        if (m.lat != 0 || m.lng != 0) {
+          sumLat += m.lat;
+          sumLng += m.lng;
+          validCount++;
+        }
+      }
+      
+      double avgLat = 13.7563; // Default to Bangkok if no GPS
+      double avgLng = 100.5018;
+
+      if (p.lat != null && p.lng != null && p.lat != 0 && p.lng != 0) {
+        // Use explicitly saved plot coordinates
+        avgLat = p.lat!;
+        avgLng = p.lng!;
+      } else if (validCount > 0) {
+        // Fallback to average of measurements
+        avgLat = sumLat / validCount;
+        avgLng = sumLng / validCount;
+      }
+      
+      plotMarkers.add(PlotMarker(
+        p, 
+        avgLat, 
+        avgLng,
+      ));
+    }
+    
     final topPadding = MediaQuery.of(context).padding.top;
 
-    final initialCenter = validPoints.isNotEmpty
-        ? LatLng(validPoints.first.lat, validPoints.first.lng)
+    final initialCenter = plotMarkers.isNotEmpty
+        ? LatLng(plotMarkers.first.lat, plotMarkers.first.lng)
         : const LatLng(13.7563, 100.5018);
 
     return Scaffold(
@@ -57,7 +101,7 @@ class _MapScreenState extends State<MapScreen> {
                             color: context.colors.textNormal,
                             letterSpacing: -0.5)),
                     const SizedBox(height: 2),
-                    Text('ตำแหน่งวัด (มีพิกัด ${validPoints.length} จุด)',
+                    Text('แสดง ${plotMarkers.length} แปลง',
                         style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
                   ],
                 ),
@@ -90,7 +134,7 @@ class _MapScreenState extends State<MapScreen> {
                           mapController: _mapController,
                           options: MapOptions(
                             initialCenter: initialCenter,
-                            initialZoom: validPoints.isNotEmpty ? 10 : 5,
+                            initialZoom: plotMarkers.isNotEmpty ? 10 : 5,
                             interactionOptions: const InteractionOptions(
                               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                             ),
@@ -103,22 +147,22 @@ class _MapScreenState extends State<MapScreen> {
                               userAgentPackageName: 'com.example.soil_sensor',
                             ),
                             MarkerLayer(
-                              markers: validPoints
-                                  .map((m) => Marker(
-                                        point: LatLng(m.lat, m.lng),
-                                        width: 40,
-                                        height: 40,
+                              markers: plotMarkers
+                                  .map((pm) => Marker(
+                                        point: LatLng(pm.lat, pm.lng),
+                                        width: 48,
+                                        height: 48,
                                         child: GestureDetector(
                                           onTap: () => setState(() =>
-                                              _selected = _selected?.id == m.id
+                                              _selected = _selected?.plot.id == pm.plot.id
                                                   ? null
-                                                  : m),
+                                                  : pm),
                                           child: Icon(
                                             Icons.location_on,
-                                            color: _selected?.id == m.id
+                                            color: _selected?.plot.id == pm.plot.id
                                                 ? Colors.orange
                                                 : context.colors.mapPrimary,
-                                            size: 40,
+                                            size: 48,
                                           ),
                                         ),
                                       ))
@@ -138,7 +182,7 @@ class _MapScreenState extends State<MapScreen> {
                             bottom: 0,
                             height: constraints.maxHeight * fraction,
                             child: MapBottomSheet(
-                              validPoints: validPoints,
+                              plotMarkers: plotMarkers,
                               selected: _selected,
                               onSelect: (m) => setState(() => _selected = m),
                               mapController: _mapController,
@@ -158,3 +202,4 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 }
+

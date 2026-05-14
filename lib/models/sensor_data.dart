@@ -2,13 +2,13 @@ enum SoilStatus { low, normal, high }
 
 enum SampleMethod { surface0_15, deep15_30, deep30_60 }
 
-// Legacy default mappings for seeding and backward compatibility
+// Default tuber crops (มันชนิดต่างๆ)
 const Map<String, String> defaultPlants = {
-  'rice': 'ข้าว',
-  'corn': 'ข้าวโพด',
-  'cassava': 'มันสำปะหลัง',
-  'sugarcane': 'อ้อย',
-  'rubber': 'ยางพารา',
+  'cassava': 'เกษตรศาสตร์ 50',
+  'sweet_potato': 'ห้วยบง 80',
+  'potato': 'ระยอง 72',
+  'jicama': 'ห้วยบง 60',
+  'taro': 'เกษตรศาสตร์ 81',
 };
 
 const Map<SampleMethod, String> sampleMethodLabels = {
@@ -73,6 +73,7 @@ class MeasurementRecord extends SensorData {
   final double lat;
   final double lng;
   final String? pointName;
+  final String? groupId;
 
   const MeasurementRecord({
     this.id,
@@ -83,6 +84,7 @@ class MeasurementRecord extends SensorData {
     required this.sampleMethod,
     this.notes,
     this.pointName,
+    this.groupId,
     required this.lat,
     required this.lng,
     required super.ph,
@@ -108,6 +110,7 @@ class MeasurementRecord extends SensorData {
       sampleMethod: sampleMethodFromString(json['sample_method'] as String? ?? 'surface_0_15'),
       notes: json['notes'] as String?,
       pointName: json['point_name'] as String?,
+      groupId: json['group_id'] as String?,
       lat: (json['lat'] as num?)?.toDouble() ?? 0,
       lng: (json['lng'] as num?)?.toDouble() ?? 0,
       ph: (json['ph'] as num).toDouble(),
@@ -129,6 +132,7 @@ class MeasurementRecord extends SensorData {
     'sample_method': sampleMethodValues[sampleMethod],
     if (notes != null) 'notes': notes,
     if (pointName != null) 'point_name': pointName,
+    if (groupId != null) 'group_id': groupId,
     'lat': lat,
     'lng': lng,
     'ph': ph,
@@ -140,4 +144,48 @@ class MeasurementRecord extends SensorData {
     'ec': ec,
     'salinity': salinity,
   };
+}
+
+class PlotRecord extends SensorData {
+  final String id;
+  final String name;
+  final DateTime createdAt;
+  final String? notes;
+  final double? lat;
+  final double? lng;
+  final List<MeasurementRecord> measurements;
+
+  const PlotRecord({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    this.notes,
+    this.lat,
+    this.lng,
+    required this.measurements,
+    required super.ph,
+    required super.nitrogen,
+    required super.phosphorus,
+    required super.potassium,
+    required super.moisture,
+    required super.temperature,
+    required super.ec,
+    required super.salinity,
+  });
+
+  int get measurementCount => measurements.length;
+}
+
+class PlantSuitability {
+  final String plantId;
+  final String plantName;
+  final double scorePercent;
+  final Map<String, String> recommendations; // key: sensorKey, value: advice
+
+  const PlantSuitability({
+    required this.plantId,
+    required this.plantName,
+    required this.scorePercent,
+    required this.recommendations,
+  });
 }
