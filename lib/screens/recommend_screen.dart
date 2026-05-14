@@ -620,7 +620,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
               ),
             ),
             const SizedBox(height: 10),
-            Divider(height: 1, color: context.colors.borderColor),
+            const SizedBox(height: 10),
 
             // List
             Expanded(
@@ -662,26 +662,34 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                     },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: context.colors.borderColor, width: 0.5)),
+                        color: context.colors.cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
                       ),
                       child: Row(
                         children: [
                           // Rank number
-                          SizedBox(
+                          Container(
                             width: 32,
-                            child: Text(
-                              rankEmoji,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: rank <= 3 ? 18 : 14,
-                                fontWeight: FontWeight.w600,
-                                color: context.colors.textMuted,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: scoreColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                rankEmoji,
+                                style: TextStyle(
+                                  fontSize: rank <= 3 ? 18 : 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: scoreColor,
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
 
                           // Name + description
                           Expanded(
