@@ -286,7 +286,7 @@ class _MeasurementCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Wrap(
-            spacing: 12,
+            spacing: 6,
             runSpacing: 6,
             children: metrics.map((m) {
               final (label, val, status) = m;
@@ -307,7 +307,7 @@ class _MeasurementCard extends StatelessWidget {
                   break;
               }
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 decoration: BoxDecoration(
                   color: bg,
                   borderRadius: BorderRadius.circular(8),

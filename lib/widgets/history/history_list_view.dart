@@ -110,8 +110,8 @@ class _HistoryCard extends StatelessWidget {
 
             // Sensor summary chips
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children: [
                 _SensorChip(label: 'pH', value: plot.ph.toStringAsFixed(1), status: getSoilStatus('ph', plot.ph)),
                 _SensorChip(label: 'N', value: plot.nitrogen.round().toString(), status: getSoilStatus('nitrogen', plot.nitrogen)),
@@ -181,7 +181,7 @@ class _SensorChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(8),
