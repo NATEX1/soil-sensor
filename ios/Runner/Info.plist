@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>SoilSensor</string>
+	<string>Soilava</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -46,9 +46,9 @@
 
 	<!-- BLE -->
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>แอปต้องการ Bluetooth เพื่อเชื่อมต่อกับอุปกรณ์ SoilSensor</string>
+	<string>แอปต้องการ Bluetooth เพื่อเชื่อมต่อกับอุปกรณ์ Soilava</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>แอปต้องการ Bluetooth เพื่อเชื่อมต่อกับอุปกรณ์ SoilSensor</string>
+	<string>แอปต้องการ Bluetooth เพื่อเชื่อมต่อกับอุปกรณ์ Soilava</string>
 
 	<!-- Location -->
 	<key>NSLocationWhenInUseUsageDescription</key>

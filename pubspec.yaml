@@ -1,5 +1,5 @@
-name: soil_sensor
-description: SoilSensor - ระบบวิเคราะห์ดินอัจฉริยะ
+name: soilava
+description: Soilava - ระบบวิเคราะห์ดินอัจฉริยะ
 publish_to: 'none'
 version: 1.0.0+1
 

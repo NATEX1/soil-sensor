@@ -34,7 +34,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => PlotProvider()),
       ],
-      child: const SoilSensorApp(),
+      child: const SoilavaApp(),
     ),
   );
 }
@@ -103,15 +103,15 @@ final _router = GoRouter(
   ],
 );
 
-class SoilSensorApp extends StatelessWidget {
-  const SoilSensorApp({super.key});
+class SoilavaApp extends StatelessWidget {
+  const SoilavaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp.router(
-      title: 'SoilSensor',
+      title: 'Soilava',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: ThemeData(

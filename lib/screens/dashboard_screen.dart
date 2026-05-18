@@ -130,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('SoilSensor',
+                    Text('Soilava',
                         style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -221,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Text(
                             isScanning
                                 ? 'กำลังค้นหาอุปกรณ์...'
-                                : 'แตะเพื่อค้นหา SoilSensor',
+                                : 'แตะเพื่อค้นหา Soilava',
                             key: ValueKey(isScanning),
                             style: TextStyle(
                               fontSize: 15,
@@ -408,8 +408,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _connectionMode == ConnectionMode.ble 
                         ? ((ble.connectedDevice != null && ble.connectedDevice!.platformName.isNotEmpty)
                             ? ble.connectedDevice!.platformName
-                            : 'SoilSensor (Bluetooth)')
-                        : 'SoilSensor (WiFi)',
+                            : 'Soilava (Bluetooth)')
+                        : 'Soilava (WiFi)',
                     style: TextStyle(
                         color: context.colors.textMuted, fontSize: 12),
                   ),

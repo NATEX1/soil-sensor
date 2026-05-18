@@ -16,7 +16,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => MeasurementsProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ],
-        child: const SoilSensorApp(),
+        child: const SoilavaApp(),
       ),
     );
 
