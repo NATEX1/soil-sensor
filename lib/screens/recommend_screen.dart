@@ -345,7 +345,6 @@ class _CassavaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color scoreColor = suitability.scorePercent >= 80
         ? Colors.green.shade600
@@ -532,11 +531,32 @@ class _AllVarietiesSheet extends StatefulWidget {
 
 class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
   List<PlantSuitability>? _all;
+  List<PlantSuitability>? _filtered;
+  int _displayCount = 10;
+  bool _isLoadingMore = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    if (_all != null) {
+      setState(() {
+        _filtered = _all!.where((s) => s.plantName.toLowerCase().contains(query)).toList();
+        _displayCount = 10;
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -558,6 +578,24 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
     if (mounted) {
       setState(() {
         _all = results;
+        _filtered = results;
+      });
+    }
+  }
+
+  void _loadMore() async {
+    if (_isLoadingMore || _filtered == null || _displayCount >= _filtered!.length) return;
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    // Fake network delay to simulate feed loading
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (mounted) {
+      setState(() {
+        _displayCount = (_displayCount + 10).clamp(0, _filtered!.length);
+        _isLoadingMore = false;
       });
     }
   }
@@ -619,25 +657,72 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
+
+            // Search Box
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                controller: _searchController,
+                style: TextStyle(color: context.colors.textNormal, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'ค้นหาสายพันธุ์...',
+                  hintStyle: TextStyle(color: context.colors.textMuted),
+                  prefixIcon: Icon(Icons.search, color: context.colors.textMuted, size: 20),
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // List
             Expanded(
-              child: _all == null
+              child: _filtered == null
                   ? Center(
                       child: CircularProgressIndicator(
                         color: context.colors.primaryBtn,
                       ),
                     )
-                  : ListView.separated(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: _all!.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, index) {
-                        final s = _all![index];
-                  final rank = index + 1;
+                  : _filtered!.isEmpty
+                      ? Center(
+                          child: Text(
+                            'ไม่พบสายพันธุ์ที่ค้นหา',
+                            style: TextStyle(color: context.colors.textMuted),
+                          ),
+                        )
+                      : NotificationListener<ScrollNotification>(
+                          onNotification: (ScrollNotification scrollInfo) {
+                            if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+                              _loadMore();
+                            }
+                            return false;
+                          },
+                          child: ListView.separated(
+                            controller: controller,
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                            itemCount: _displayCount < _filtered!.length ? _displayCount + 1 : _filtered!.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            itemBuilder: (_, index) {
+                              if (index == _displayCount) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 24, height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2.5, color: context.colors.primaryBtn),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final s = _filtered![index];
+                              final rank = _all!.indexOf(s) + 1;
                   final variety = cassavaVarieties[s.plantId];
                   final scoreColor = s.scorePercent >= 80
                       ? Colors.green.shade600
@@ -748,6 +833,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                   );
                 },
               ),
+            ),
             ),
           ],
         ),
