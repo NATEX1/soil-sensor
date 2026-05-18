@@ -4,7 +4,7 @@ import '../services/database_service.dart';
 
 // ─── Date Range Filter ───────────────────────────────────────────────
 
-enum DateRange { d7, d30, d90, all }
+enum DateRange { d7, d30, d90, all, custom }
 
 extension DateRangeLabel on DateRange {
   String get label {
@@ -17,10 +17,12 @@ extension DateRangeLabel on DateRange {
         return '90 วัน';
       case DateRange.all:
         return 'ทั้งหมด';
+      case DateRange.custom:
+        return 'เลือกช่วงเวลา';
     }
   }
 
-  DateTime get fromDate {
+  DateTime? get fromDate {
     final now = DateTime.now();
     switch (this) {
       case DateRange.d7:
@@ -31,6 +33,8 @@ extension DateRangeLabel on DateRange {
         return now.subtract(const Duration(days: 90));
       case DateRange.all:
         return DateTime(2000);
+      case DateRange.custom:
+        return null;
     }
   }
 }
@@ -54,6 +58,9 @@ class MeasurementsProvider extends ChangeNotifier {
   String? _error;
   DateRange _dateRange = DateRange.d30;
 
+  DateTime? _customFrom;
+  DateTime? _customTo;
+
   // — Getters —
   List<PlotRecord> get plots => _plots;
   List<PlotRecord> get allPlots => _allPlots;
@@ -63,41 +70,87 @@ class MeasurementsProvider extends ChangeNotifier {
   int get totalCount => _totalCount;
   String? get error => _error;
   DateRange get dateRange => _dateRange;
+  DateTime? get customFrom => _customFrom;
+  DateTime? get customTo => _customTo;
+
+  DateTime? get currentFrom {
+    if (_dateRange == DateRange.custom) return _customFrom;
+    return _dateRange.fromDate;
+  }
+
+  DateTime? get currentTo {
+    if (_dateRange == DateRange.custom && _customTo != null) {
+      return DateTime(_customTo!.year, _customTo!.month, _customTo!.day, 23, 59, 59);
+    }
+    return null;
+  }
 
   // — Actions —
 
   void setDateRange(DateRange range) {
     _dateRange = range;
-    notifyListeners();
+    if (range != DateRange.custom || (_customFrom != null && _customTo != null)) {
+      fetch();
+    } else {
+      notifyListeners();
+    }
+  }
+
+  void setCustomRange(DateTime from, DateTime to) {
+    _dateRange = DateRange.custom;
+    _customFrom = from;
+    _customTo = to;
     fetch();
   }
 
   /// Initial fetch: loads first page + full list for map/export, counts total.
   Future<void> fetch() async {
+    if (_dateRange == DateRange.custom && (_customFrom == null || _customTo == null)) {
+      _plots = [];
+      _allPlots = [];
+      _totalCount = 0;
+      notifyListeners();
+      return;
+    }
+
     _loading = true;
     _error = null;
     _hasMore = true;
     notifyListeners();
 
     try {
-      // Count total records in the selected range
       final db = await DatabaseService.database;
+      String where = '1=1';
+      List<dynamic> args = [];
+      final cFrom = currentFrom;
+      final cTo = currentTo;
+      if (cFrom != null) {
+        where += ' AND created_at >= ?';
+        args.add(cFrom.toIso8601String());
+      }
+      if (cTo != null) {
+        where += ' AND created_at <= ?';
+        args.add(cTo.toIso8601String());
+      }
+
       final countRes = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM plots WHERE created_at >= ?',
-        [_dateRange.fromDate.toIso8601String()],
+        'SELECT COUNT(*) as count FROM plots WHERE $where',
+        args,
       );
       _totalCount = (countRes.first['count'] as int?) ?? 0;
 
       // Paginated list (first page)
       _plots = await DatabaseService.getPlots(
-        from: _dateRange.fromDate,
+        from: cFrom,
+        to: cTo,
         limit: _pageSize,
         offset: 0,
       );
 
       // Full list (map pins, export, dashboard)
       _allPlots = await DatabaseService.getPlots(
-        from: _dateRange.fromDate,
+        from: cFrom,
+        to: cTo,
       );
 
       _hasMore = _plots.length >= _pageSize;
@@ -117,7 +170,8 @@ class MeasurementsProvider extends ChangeNotifier {
 
     try {
       final more = await DatabaseService.getPlots(
-        from: _dateRange.fromDate,
+        from: currentFrom,
+        to: currentTo,
         limit: _pageSize,
         offset: _plots.length,
       );

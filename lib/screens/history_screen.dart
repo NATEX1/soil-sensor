@@ -102,7 +102,45 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: GestureDetector(
-                          onTap: () => provider.setDateRange(r),
+                          onTap: () async {
+                            if (r == DateRange.custom) {
+                              final picked = await showDateRangePicker(
+                                context: context,
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime.now(),
+                                initialDateRange: (provider.customFrom != null && provider.customTo != null) 
+                                  ? DateTimeRange(start: provider.customFrom!, end: provider.customTo!)
+                                  : null,
+                                builder: (context, child) {
+                                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: isDark ? const ColorScheme.dark(
+                                        primary: Color(0xFF3B82F6),
+                                        onPrimary: Colors.white,
+                                        surface: Color(0xFF1f2937),
+                                        onSurface: Colors.white,
+                                      ) : const ColorScheme.light(
+                                        primary: Color(0xFF2563EB),
+                                        onPrimary: Colors.white,
+                                        surface: Colors.white,
+                                        onSurface: Colors.black,
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                provider.setCustomRange(picked.start, picked.end);
+                              } else if (provider.customFrom == null) {
+                                // Revert to previous if canceled
+                                provider.setDateRange(DateRange.d30);
+                              }
+                            } else {
+                              provider.setDateRange(r);
+                            }
+                          },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -122,7 +160,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ] : [],
                             ),
                             child: Text(
-                              r.label,
+                              r == DateRange.custom && provider.customFrom != null && provider.customTo != null && selected
+                                  ? '${provider.customFrom!.day.toString().padLeft(2, '0')}/${provider.customFrom!.month.toString().padLeft(2, '0')}/${provider.customFrom!.year} - ${provider.customTo!.day.toString().padLeft(2, '0')}/${provider.customTo!.month.toString().padLeft(2, '0')}/${provider.customTo!.year}'
+                                  : r.label,
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
