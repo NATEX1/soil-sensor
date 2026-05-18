@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:soil_sensor/main.dart';
-import 'package:soil_sensor/services/ble_service.dart';
-import 'package:soil_sensor/services/wifi_service.dart';
-import 'package:soil_sensor/providers/measurements_provider.dart';
-import 'package:soil_sensor/providers/theme_provider.dart';
+import 'package:soilava/main.dart';
+import 'package:soilava/services/ble_service.dart';
+import 'package:soilava/services/wifi_service.dart';
+import 'package:soilava/providers/measurements_provider.dart';
+import 'package:soilava/providers/theme_provider.dart';
 
 void main() {
   testWidgets('App launches successfully', (WidgetTester tester) async {

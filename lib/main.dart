@@ -16,6 +16,7 @@ import 'screens/recommend_screen.dart';
 import 'screens/settings/plants_management_screen.dart';
 import 'models/sensor_data.dart';
 import 'screens/cassava_fertilizer_screen.dart';
+import 'screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,7 +57,7 @@ CustomTransitionPage<void> _slidePage(Widget child, GoRouterState state) {
 }
 
 final _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
@@ -75,6 +76,10 @@ final _router = GoRouter(
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen())
         ]),
       ],
+    ),
+    GoRoute(
+      path: '/splash',
+      builder: (_, __) => const SplashScreen(),
     ),
     GoRoute(
       path: '/recommend',
