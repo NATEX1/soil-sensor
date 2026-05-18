@@ -827,6 +827,12 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                                   color: scoreColor),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: context.colors.textMuted.withValues(alpha: 0.5),
+                          ),
                         ],
                       ),
                     ),
