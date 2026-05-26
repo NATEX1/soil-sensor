@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/sensor_data.dart';
-import '../services/database_service.dart';
+import '../services/api_service.dart';
 
 class PlotProvider extends ChangeNotifier {
   PlotRecord? _currentPlot;
@@ -21,7 +21,7 @@ class PlotProvider extends ChangeNotifier {
   Future<void> loadAvailablePlots() async {
     _setLoading(true);
     try {
-      _availablePlots = await DatabaseService.getPlots();
+      _availablePlots = await ApiService.getPlots();
       // Auto-select the most recent plot if none selected
       if (_currentPlot == null && _availablePlots.isNotEmpty) {
         _currentPlot = _availablePlots.first;
@@ -43,7 +43,7 @@ class PlotProvider extends ChangeNotifier {
   Future<PlotRecord?> startNewPlot(String name, {String? notes, double? lat, double? lng}) async {
     _setLoading(true);
     try {
-      final id = await DatabaseService.createPlot(name, notes: notes, lat: lat, lng: lng);
+      final id = await ApiService.createPlot(name, notes: notes, lat: lat, lng: lng);
       final newPlot = PlotRecord(
         id: id,
         name: name,
@@ -74,7 +74,7 @@ class PlotProvider extends ChangeNotifier {
     if (_currentPlot == null) return;
     _setLoading(true);
     try {
-      final plots = await DatabaseService.getPlots();
+      final plots = await ApiService.getPlots();
       _availablePlots = plots;
       final updated = plots.where((p) => p.id == _currentPlot!.id).firstOrNull;
       if (updated != null) {

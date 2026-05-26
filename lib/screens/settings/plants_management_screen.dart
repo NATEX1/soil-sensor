@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_colors.dart';
 
 class PlantsManagementScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _PlantsManagementScreenState extends State<PlantsManagementScreen> {
 
   Future<void> _loadPlants() async {
     setState(() => _isLoading = true);
-    final plants = await DatabaseService.getPlants();
+    final plants = await ApiService.getPlants();
     if (mounted) {
       setState(() {
         _plants = plants;
@@ -31,11 +31,11 @@ class _PlantsManagementScreenState extends State<PlantsManagementScreen> {
   }
 
   Future<void> _deletePlant(Map<String, dynamic> plant) async {
-    final id = plant['id'] as String;
+    final id = plant['id'].toString();
     final name = plant['name'] as String;
 
     try {
-      await DatabaseService.deletePlant(id);
+      await ApiService.deletePlant(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -94,46 +94,269 @@ class _PlantsManagementScreenState extends State<PlantsManagementScreen> {
   }
 
   Future<void> _showAddPlantDialog() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final nameController = TextEditingController();
+    final minPhController = TextEditingController();
+    final maxPhController = TextEditingController();
+    final minNController = TextEditingController();
+    final maxNController = TextEditingController();
+    final minPController = TextEditingController();
+    final maxPController = TextEditingController();
+    final minKController = TextEditingController();
+    final maxKController = TextEditingController();
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.colors.cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('เพิ่มชนิดพืช', style: TextStyle(color: context.colors.textNormal, fontSize: 18, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          style: TextStyle(color: context.colors.textNormal),
-          decoration: InputDecoration(
-            hintText: 'เช่น มะม่วง, ทุเรียน, etc.',
-            hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
-            filled: true,
-            fillColor: context.colors.scaffoldBg,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: context.colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          left: 24,
+          right: 24,
+          top: 16,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    color: context.colors.textMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('เพิ่มชนิดพืช', style: TextStyle(color: context.colors.textNormal, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              Text('ชื่อพืช', style: TextStyle(color: context.colors.textNormal, fontSize: 14)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: nameController,
+                style: TextStyle(color: context.colors.textNormal),
+                decoration: InputDecoration(
+                  hintText: 'เช่น มะม่วง, ทุเรียน, etc.',
+                  hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+                  filled: true,
+                  fillColor: context.colors.scaffoldBg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('ค่า pH ที่เหมาะสม', style: TextStyle(color: context.colors.textNormal, fontSize: 14)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: minPhController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: context.colors.textNormal),
+                      decoration: InputDecoration(
+                        hintText: 'ต่ำสุด (เช่น 5.5)',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true,
+                        fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('-', style: TextStyle(color: context.colors.textNormal)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: maxPhController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: context.colors.textNormal),
+                      decoration: InputDecoration(
+                        hintText: 'สูงสุด (เช่น 7.0)',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true,
+                        fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('ช่วง N-P-K ที่เหมาะสม (mg/kg)', style: TextStyle(color: context.colors.textNormal, fontSize: 14, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text('กรอกช่วงค่าที่พืชต้องการ (ต่ำสุด–สูงสุด) เพื่อให้ระบบตรวจสอบได้ทั้งสองด้าน',
+                style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
+              const SizedBox(height: 10),
+              // N row
+              Row(
+                children: [
+                  SizedBox(width: 28, child: Text('N', style: TextStyle(color: context.colors.primaryBtn, fontWeight: FontWeight.w700, fontSize: 13))),
+                  Expanded(
+                    child: TextField(
+                      controller: minNController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: context.colors.textNormal, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'ต่ำสุด',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true, fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('–', style: TextStyle(color: context.colors.textMuted))),
+                  Expanded(
+                    child: TextField(
+                      controller: maxNController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: context.colors.textNormal, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'สูงสุด',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true, fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // P row
+              Row(
+                children: [
+                  SizedBox(width: 28, child: Text('P', style: TextStyle(color: context.colors.primaryBtn, fontWeight: FontWeight.w700, fontSize: 13))),
+                  Expanded(
+                    child: TextField(
+                      controller: minPController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: context.colors.textNormal, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'ต่ำสุด',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true, fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('–', style: TextStyle(color: context.colors.textMuted))),
+                  Expanded(
+                    child: TextField(
+                      controller: maxPController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: context.colors.textNormal, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'สูงสุด',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true, fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // K row
+              Row(
+                children: [
+                  SizedBox(width: 28, child: Text('K', style: TextStyle(color: context.colors.primaryBtn, fontWeight: FontWeight.w700, fontSize: 13))),
+                  Expanded(
+                    child: TextField(
+                      controller: minKController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: context.colors.textNormal, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'ต่ำสุด',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true, fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('–', style: TextStyle(color: context.colors.textMuted))),
+                  Expanded(
+                    child: TextField(
+                      controller: maxKController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: context.colors.textNormal, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'สูงสุด',
+                        hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
+                        filled: true, fillColor: context.colors.scaffoldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (nameController.text.trim().isEmpty) return;
+                      Navigator.pop(context, {
+                        'name': nameController.text.trim(),
+                        'min_ph': double.tryParse(minPhController.text),
+                        'max_ph': double.tryParse(maxPhController.text),
+                        'min_n': double.tryParse(minNController.text),
+                        'max_n': double.tryParse(maxNController.text),
+                        'min_p': double.tryParse(minPController.text),
+                        'max_p': double.tryParse(maxPController.text),
+                        'min_k': double.tryParse(minKController.text),
+                        'max_k': double.tryParse(maxKController.text),
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.colors.primaryBtn,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('บันทึก'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.primaryBtn,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('บันทึก'),
-          ),
-        ],
       ),
     );
 
-    if (name != null && name.isNotEmpty) {
-      await DatabaseService.addPlant(name);
+    if (result != null) {
+      await ApiService.addPlant(
+        result['name'],
+        minPh: result['min_ph'],
+        maxPh: result['max_ph'],
+        minN: result['min_n'],
+        maxN: result['max_n'],
+        minP: result['min_p'],
+        maxP: result['max_p'],
+        minK: result['min_k'],
+        maxK: result['max_k'],
+      );
       await _loadPlants();
     }
   }
@@ -207,20 +430,42 @@ class _PlantsManagementScreenState extends State<PlantsManagementScreen> {
   }
 
   Widget _buildPlantItem(Map<String, dynamic> plant) {
+    final hasDetails = plant['min_ph'] != null || plant['min_n'] != null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.grass_rounded, size: 22, color: context.colors.textNormal),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.grass_rounded, size: 22, color: context.colors.textNormal),
+          ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              plant['name'] as String,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: context.colors.textNormal,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  plant['name'] as String,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: context.colors.textNormal,
+                  ),
+                ),
+                if (hasDetails) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'pH: ${plant['min_ph'] ?? '-'} ถึง ${plant['max_ph'] ?? '-'}',
+                    style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                  ),
+                  if (plant['min_n'] != null || plant['max_n'] != null)
+                    Text(
+                      'N: ${plant['min_n'] ?? '-'}–${plant['max_n'] ?? '-'}  P: ${plant['min_p'] ?? '-'}–${plant['max_p'] ?? '-'}  K: ${plant['min_k'] ?? '-'}–${plant['max_k'] ?? '-'} mg/kg',
+                      style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                    ),
+                ]
+              ],
             ),
           ),
           IconButton(

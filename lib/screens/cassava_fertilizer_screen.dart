@@ -6,40 +6,17 @@ import '../theme/app_colors.dart';
 
 class CassavaFertilizerScreen extends StatelessWidget {
   final PlotRecord plot;
-  final String varietyId;
+  final CassavaVariety variety;
 
   const CassavaFertilizerScreen({
     super.key,
     required this.plot,
-    required this.varietyId,
+    required this.variety,
   });
 
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
-    final variety = cassavaVarieties[varietyId];
-
-    if (variety == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: context.colors.textMuted),
-              const SizedBox(height: 12),
-              Text('ไม่พบข้อมูลสายพันธุ์',
-                  style: TextStyle(color: context.colors.textMuted)),
-              const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('กลับ'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       body: ListView(
@@ -329,7 +306,7 @@ class _FertPlanTimeline extends StatelessWidget {
                 rate: '200–500 กก./ไร่ ไถกลบก่อนปลูก',
               ),
             if (plot.ph > variety.maxPh)
-              _FertItem(
+              const _FertItem(
                 code: 'กำมะถันบด (S) หรือ 21-0-0',
                 purpose: 'ลด pH ให้อยู่ในช่วงที่เหมาะสม',
                 rate: 'กำมะถัน 50–100 กก./ไร่',
@@ -349,7 +326,7 @@ class _FertPlanTimeline extends StatelessWidget {
             rate: variety.baseFertRate,
           ),
           if (needsP)
-            _FertItem(
+            const _FertItem(
               code: 'DAP 18-46-0',
               purpose: 'เสริมฟอสฟอรัส สำหรับพัฒนาราก',
               rate: '20–30 กก./ไร่ ใส่รองก้นหลุม',
@@ -364,13 +341,13 @@ class _FertPlanTimeline extends StatelessWidget {
         color: Colors.teal.shade600,
         items: [
           if (needsN)
-            _FertItem(
+            const _FertItem(
               code: 'ยูเรีย 46-0-0',
               purpose: 'กระตุ้นการเจริญเติบโตของลำต้นและใบ',
               rate: '25–30 กก./ไร่',
             )
           else
-            _FertItem(
+            const _FertItem(
               code: 'ไม่จำเป็นต้องใส่ N เพิ่ม',
               purpose: 'ค่าไนโตรเจนในดินเพียงพอแล้ว',
               rate: 'ตรวจสอบการเจริญเติบโตของต้น',
@@ -390,7 +367,7 @@ class _FertPlanTimeline extends StatelessWidget {
             rate: variety.topFertRate,
           ),
           if (needsK)
-            _FertItem(
+            const _FertItem(
               code: 'KCl 0-0-60',
               purpose: 'เสริมโพแทสเซียม เพิ่มคุณภาพและน้ำหนักหัว',
               rate: '25–30 กก./ไร่',

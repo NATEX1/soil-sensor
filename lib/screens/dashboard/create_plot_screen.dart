@@ -70,6 +70,43 @@ class _CreatePlotScreenState extends State<CreatePlotScreen> {
     }
   }
 
+  Future<void> _showEditNameModal() async {
+    final tempController = TextEditingController(text: _nameController.text);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ตั้งชื่อแปลง', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: tempController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'เช่น แปลงมันสำปะหลัง',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, tempController.text.trim()),
+            style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('ตกลง', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _nameController.text = result;
+      });
+    }
+  }
+
   Future<void> _savePlot() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
@@ -194,28 +231,36 @@ class _CreatePlotScreenState extends State<CreatePlotScreen> {
                 ),
                 const SizedBox(width: 12),
                 
-                // Plot Name Input
+                // Plot Name Display (Clickable)
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _nameController,
-                      style: TextStyle(fontWeight: FontWeight.w600, color: context.colors.textNormal),
-                      decoration: InputDecoration(
-                        hintText: 'ตั้งชื่อแปลงของคุณ',
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        prefixIcon: Icon(Icons.edit_outlined, size: 20, color: context.colors.textMuted),
+                  child: GestureDetector(
+                    onTap: _showEditNameModal,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _nameController.text,
+                              style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textNormal, fontSize: 15),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.edit, size: 20, color: context.colors.primaryBtn),
+                        ],
                       ),
                     ),
                   ),

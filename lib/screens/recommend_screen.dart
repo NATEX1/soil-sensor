@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/sensor_data.dart';
 import '../models/calculations.dart';
 import '../providers/measurements_provider.dart';
 import '../providers/plot_provider.dart';
+import '../services/api_service.dart';
 import '../theme/app_colors.dart';
 
 class RecommendScreen extends StatefulWidget {
@@ -18,9 +18,34 @@ class RecommendScreen extends StatefulWidget {
 
 class _RecommendScreenState extends State<RecommendScreen> {
   PlotRecord? get plot => widget.plot;
+  List<CassavaVariety> _varieties = [];
+  bool _isLoadingPlants = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlants();
+  }
+
+  Future<void> _loadPlants() async {
+    final plants = await ApiService.getPlants();
+    if (mounted) {
+      setState(() {
+        _varieties = plants.map((p) => CassavaVariety.fromJson(p)).toList();
+        _isLoadingPlants = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingPlants) {
+      return Scaffold(
+        backgroundColor: context.colors.scaffoldBg,
+        body: Center(child: CircularProgressIndicator(color: context.colors.primaryBtn)),
+      );
+    }
+
     final topPadding = MediaQuery.of(context).padding.top;
 
     if (plot == null || plot!.measurements.isEmpty) {
@@ -62,7 +87,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
       );
     }
 
-    final top3 = evaluateSuitability(plot!);
+    final top3 = evaluateSuitability(plot!, _varieties);
 
     return Scaffold(
       body: ListView(
@@ -119,7 +144,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
             ),
             icon: const Icon(Icons.list_alt_rounded, size: 18),
             label: Text(
-              'เปรียบเทียบสายพันธุ์ทั้งหมด (${cassavaVarieties.length} ชนิด)',
+              'เปรียบเทียบสายพันธุ์ทั้งหมด (${_varieties.length} ชนิด)',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
@@ -145,8 +170,13 @@ class _RecommendScreenState extends State<RecommendScreen> {
           ...top3.asMap().entries.map((entry) {
             final rank = entry.key + 1;
             final s = entry.value;
-            final variety = cassavaVarieties[s.plantId];
-            return _CassavaCard(suitability: s, rank: rank, variety: variety, plot: plot!);
+            final variety = _varieties.firstWhere((v) => v.id == s.plantId);
+            return _CassavaCard(
+              suitability: s, 
+              rank: rank, 
+              variety: variety, 
+              plot: plot!
+            );
           }),
 
         ],
@@ -159,7 +189,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AllVarietiesSheet(plot: plot!),
+      builder: (_) => _AllVarietiesSheet(plot: plot!, varieties: _varieties),
     );
   }
 
@@ -284,6 +314,19 @@ class _MeasurementCard extends StatelessWidget {
                   style: TextStyle(fontSize: 11, color: context.colors.textMuted)),
             ],
           ),
+          if (record.lat != 0 || record.lng != 0) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 12, color: context.colors.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  '${record.lat.toStringAsFixed(6)}, ${record.lng.toStringAsFixed(6)}',
+                  style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -333,13 +376,13 @@ class _MeasurementCard extends StatelessWidget {
 class _CassavaCard extends StatelessWidget {
   final PlantSuitability suitability;
   final int rank;
-  final CassavaVariety? variety;
+  final CassavaVariety variety;
   final PlotRecord plot;
 
   const _CassavaCard({
     required this.suitability,
     required this.rank,
-    this.variety,
+    required this.variety,
     required this.plot,
   });
 
@@ -418,25 +461,23 @@ class _CassavaCard extends StatelessWidget {
             ],
           ),
 
-          if (variety != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 30, top: 4),
-              child: Text(variety!.description,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: context.colors.textMuted,
-                      height: 1.4)),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 30, top: 4),
+            child: Text(variety.description,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.textMuted,
+                    height: 1.4)),
+          ),
 
           // ── Variety info chips ──
-          if (variety != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 30, top: 8),
-              child: Text(
-                'ทนแล้ง: ${variety!.droughtTolerance}  •  ผลผลิต: ${variety!.yieldPotential}  •  แป้ง: ${variety!.starchRange}',
-                style: TextStyle(fontSize: 11, color: context.colors.textMuted),
-              ),
+          Padding(
+            padding: const EdgeInsets.only(left: 30, top: 8),
+            child: Text(
+              'ทนแล้ง: ${variety.droughtTolerance}  •  ผลผลิต: ${variety.yieldPotential}  •  แป้ง: ${variety.starchRange}',
+              style: TextStyle(fontSize: 11, color: context.colors.textMuted),
             ),
+          ),
 
           // ── Score bar ──
           Padding(
@@ -453,14 +494,13 @@ class _CassavaCard extends StatelessWidget {
           ),
 
           // ── Fertilizer hint ──
-          if (variety != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 30, top: 12),
-              child: Text(
-                'ปุ๋ยรองพื้น: ${variety!.baseFertCode} (${variety!.baseFertRate})',
-                style: TextStyle(fontSize: 12, color: context.colors.textNormal),
-              ),
+          Padding(
+            padding: const EdgeInsets.only(left: 30, top: 12),
+            child: Text(
+              'ปุ๋ยรองพื้น: ${variety.baseFertCode} (${variety.baseFertRate})',
+              style: TextStyle(fontSize: 12, color: context.colors.textNormal),
             ),
+          ),
 
           // ── Issues ──
           if (suitability.recommendations.isNotEmpty &&
@@ -496,22 +536,22 @@ class _CassavaCard extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () => context.push('/cassava-fertilizer', extra: {
                   'plot': plot,
-                  'varietyId': suitability.plantId,
+                  'variety': variety,
                 }),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.colors.primaryBtn,
-                  side: BorderSide(color: context.colors.borderColor),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text(
-                  'ดูแผนปุ๋ย',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.colors.primaryBtn,
+                    side: BorderSide(color: context.colors.borderColor),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text(
+                    'ดูแผนปุ๋ย',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -522,8 +562,9 @@ class _CassavaCard extends StatelessWidget {
 
 class _AllVarietiesSheet extends StatefulWidget {
   final PlotRecord plot;
+  final List<CassavaVariety> varieties;
 
-  const _AllVarietiesSheet({required this.plot});
+  const _AllVarietiesSheet({required this.plot, required this.varieties});
 
   @override
   State<_AllVarietiesSheet> createState() => _AllVarietiesSheetState();
@@ -571,9 +612,8 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
       ec: widget.plot.ec,
       salinity: widget.plot.salinity,
     );
-    
-    // Evaluate in background isolate to prevent UI jank
-    final results = await compute(evaluateAllSuitability, sensorData);
+    // Evaluate directly
+    final results = evaluateAllSuitability(sensorData, widget.varieties);
     
     if (mounted) {
       setState(() {
@@ -723,7 +763,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
 
                               final s = _filtered![index];
                               final rank = _all!.indexOf(s) + 1;
-                  final variety = cassavaVarieties[s.plantId];
+                  final variety = widget.varieties.firstWhere((v) => v.id == s.plantId);
                   final scoreColor = s.scorePercent >= 80
                       ? Colors.green.shade600
                       : s.scorePercent >= 50
@@ -742,7 +782,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                       Navigator.pop(context);
                       context.push('/cassava-fertilizer', extra: {
                         'plot': widget.plot,
-                        'varietyId': s.plantId,
+                        'variety': variety,
                       });
                     },
                     borderRadius: BorderRadius.circular(10),
@@ -786,27 +826,25 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         color: context.colors.textNormal)),
-                                if (variety != null) ...[
-                                  Text(
-                                    'แป้ง ${variety.starchRange}  •  ทนแล้ง: ${variety.droughtTolerance}',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: context.colors.textMuted),
+                                Text(
+                                  'แป้ง ${variety.starchRange}  •  ทนแล้ง: ${variety.droughtTolerance}',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: context.colors.textMuted),
+                                ),
+                                const SizedBox(height: 4),
+                                // Score bar
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: s.scorePercent / 100,
+                                    minHeight: 2,
+                                    backgroundColor:
+                                        context.colors.borderColor,
+                                    valueColor: AlwaysStoppedAnimation(
+                                        scoreColor),
                                   ),
-                                  const SizedBox(height: 4),
-                                  // Score bar
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(2),
-                                    child: LinearProgressIndicator(
-                                      value: s.scorePercent / 100,
-                                      minHeight: 2,
-                                      backgroundColor:
-                                          context.colors.borderColor,
-                                      valueColor: AlwaysStoppedAnimation(
-                                          scoreColor),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ],
                             ),
                           ),

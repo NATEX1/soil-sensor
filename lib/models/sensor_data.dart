@@ -66,8 +66,6 @@ class MeasurementRecord extends SensorData {
   final String? id;
   final String? userId;
   final DateTime? measuredAt;
-  final String plantId;
-  final String plantName;
   final SampleMethod sampleMethod;
   final String? notes;
   final double lat;
@@ -79,8 +77,6 @@ class MeasurementRecord extends SensorData {
     this.id,
     this.userId,
     this.measuredAt,
-    required this.plantId,
-    required this.plantName,
     required this.sampleMethod,
     this.notes,
     this.pointName,
@@ -99,14 +95,9 @@ class MeasurementRecord extends SensorData {
 
   factory MeasurementRecord.fromJson(Map<String, dynamic> json) {
     return MeasurementRecord(
-      id: json['id'] as String?,
+      id: json['id']?.toString(),
       userId: json['user_id'] as String?,
       measuredAt: json['measured_at'] != null ? DateTime.parse(json['measured_at'] as String) : null,
-      plantId: json['plant_id'] as String? ?? json['plant_type'] as String? ?? 'unknown',
-      plantName: json['plant_name'] as String? ?? 
-                 json['custom_plant'] as String? ?? 
-                 defaultPlants[json['plant_type'] as String?] ?? 
-                 'ไม่ทราบชนิด',
       sampleMethod: sampleMethodFromString(json['sample_method'] as String? ?? 'surface_0_15'),
       notes: json['notes'] as String?,
       pointName: json['point_name'] as String?,
@@ -128,7 +119,6 @@ class MeasurementRecord extends SensorData {
     if (id != null) 'id': id,
     if (userId != null) 'user_id': userId,
     if (measuredAt != null) 'measured_at': measuredAt!.toIso8601String(),
-    'plant_id': plantId,
     'sample_method': sampleMethodValues[sampleMethod],
     if (notes != null) 'notes': notes,
     if (pointName != null) 'point_name': pointName,

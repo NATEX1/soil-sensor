@@ -7,8 +7,8 @@
       "type": "dart",
       "program": "lib/main.dart",
       "toolArgs": [
-        "--dart-define=SUPABASE_URL=https://lycndrnegjkohtaogabk.supabase.co",
-        "--dart-define=SUPABASE_ANON_KEY=sb_publishable_DwW7X4D6hRnP2hj4hcQr6g_v9CZcOtk"
+        "--dart-define=API_BASE_URL=http://10.0.2.2:8080/api",
+        "--dart-define=API_KEY=soil2026_secure"
       ]
     },
     {

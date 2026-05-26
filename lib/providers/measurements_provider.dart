@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/sensor_data.dart';
-import '../services/database_service.dart';
+import '../services/api_service.dart';
 
 // ─── Date Range Filter ───────────────────────────────────────────────
 
@@ -119,28 +119,16 @@ class MeasurementsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final db = await DatabaseService.database;
-      String where = '1=1';
-      List<dynamic> args = [];
       final cFrom = currentFrom;
       final cTo = currentTo;
-      if (cFrom != null) {
-        where += ' AND created_at >= ?';
-        args.add(cFrom.toIso8601String());
-      }
-      if (cTo != null) {
-        where += ' AND created_at <= ?';
-        args.add(cTo.toIso8601String());
-      }
 
-      final countRes = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM plots WHERE $where',
-        args,
+      _totalCount = await ApiService.getPlotsCount(
+        from: cFrom,
+        to: cTo,
       );
-      _totalCount = (countRes.first['count'] as int?) ?? 0;
 
       // Paginated list (first page)
-      _plots = await DatabaseService.getPlots(
+      _plots = await ApiService.getPlots(
         from: cFrom,
         to: cTo,
         limit: _pageSize,
@@ -148,7 +136,7 @@ class MeasurementsProvider extends ChangeNotifier {
       );
 
       // Full list (map pins, export, dashboard)
-      _allPlots = await DatabaseService.getPlots(
+      _allPlots = await ApiService.getPlots(
         from: cFrom,
         to: cTo,
       );
@@ -169,7 +157,7 @@ class MeasurementsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final more = await DatabaseService.getPlots(
+      final more = await ApiService.getPlots(
         from: currentFrom,
         to: currentTo,
         limit: _pageSize,
@@ -192,7 +180,7 @@ class MeasurementsProvider extends ChangeNotifier {
   /// Delete a plot.
   Future<void> remove(String id) async {
     try {
-      await DatabaseService.deletePlot(id);
+      await ApiService.deletePlot(id);
       _plots = _plots.where((p) => p.id != id).toList();
       _allPlots = _allPlots.where((p) => p.id != id).toList();
       _totalCount = (_totalCount - 1).clamp(0, _totalCount);

@@ -15,6 +15,7 @@ import 'screens/settings_screen.dart';
 import 'screens/recommend_screen.dart';
 import 'screens/settings/plants_management_screen.dart';
 import 'models/sensor_data.dart';
+import 'models/calculations.dart';
 import 'screens/cassava_fertilizer_screen.dart';
 import 'screens/splash_screen.dart';
 
@@ -99,7 +100,7 @@ final _router = GoRouter(
         return _slidePage(
           CassavaFertilizerScreen(
             plot: args['plot'] as PlotRecord,
-            varietyId: args['varietyId'] as String,
+            variety: args['variety'] as CassavaVariety,
           ),
           state,
         );

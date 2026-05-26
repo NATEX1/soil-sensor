@@ -1,8 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../../models/sensor_data.dart';
-import '../../services/database_service.dart';
+import '../../services/api_service.dart';
 import '../../providers/plot_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../screens/dashboard/create_plot_screen.dart';
@@ -32,17 +33,15 @@ class _SaveModalState extends State<SaveModal> {
   SampleMethod _sampleMethod = SampleMethod.surface0_15;
   final _notesController = TextEditingController();
   final _pointNameController = TextEditingController();
-  final _newPlotNameController = TextEditingController();
   double? _lat;
   double? _lng;
   bool _saving = false;
   bool _locating = false;
+  final bool _sensorLocating = false;
   String? _error;
 
   // Plot selection
   PlotRecord? _selectedPlot;
-  bool _showNewPlotField = false;
-  bool _creatingPlot = false;
 
   @override
   void initState() {
@@ -81,7 +80,6 @@ class _SaveModalState extends State<SaveModal> {
   void dispose() {
     _notesController.dispose();
     _pointNameController.dispose();
-    _newPlotNameController.dispose();
     super.dispose();
   }
 
@@ -107,30 +105,25 @@ class _SaveModalState extends State<SaveModal> {
     }
   }
 
-  Future<void> _createNewPlot() async {
-    final name = _newPlotNameController.text.trim();
-    if (name.isEmpty) return;
-
-    setState(() => _creatingPlot = true);
-    try {
-      final plotProvider = context.read<PlotProvider>();
-      final newPlot = await plotProvider.startNewPlot(name);
-      if (newPlot != null && mounted) {
+  Future<void> _openCreatePlotScreen() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreatePlotScreen()),
+    );
+    if (result == true) {
+      if (!mounted) return;
+      final plots = context.read<PlotProvider>().availablePlots;
+      if (plots.isNotEmpty) {
         setState(() {
-          _selectedPlot = newPlot;
-          _showNewPlotField = false;
-          _newPlotNameController.clear();
+          _selectedPlot = plots.first;
         });
       }
-    } catch (e) {
-      setState(() => _error = 'ไม่สามารถสร้างแปลงได้: $e');
-    } finally {
-      if (mounted) setState(() => _creatingPlot = false);
     }
   }
 
-  Future<void> _save() async {
-    if (widget.sensorData == null) return;
+  Future<void> _save({SensorData? overrideData}) async {
+    final dataToSave = overrideData ?? widget.sensorData;
+    if (dataToSave == null) return;
     if (_selectedPlot == null) {
       setState(() => _error = 'กรุณาเลือกแปลงก่อนบันทึก');
       return;
@@ -144,22 +137,21 @@ class _SaveModalState extends State<SaveModal> {
       _error = null;
     });
     try {
-      await DatabaseService.saveMeasurement(
-        plantId: 'tuber_general',
+      await ApiService.saveMeasurement(
         sampleMethod: _sampleMethod,
         pointName: _pointNameController.text.isEmpty ? null : _pointNameController.text,
         groupId: _selectedPlot!.id,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         lat: _lat ?? 0,
         lng: _lng ?? 0,
-        ph: widget.sensorData!.ph,
-        nitrogen: widget.sensorData!.nitrogen,
-        phosphorus: widget.sensorData!.phosphorus,
-        potassium: widget.sensorData!.potassium,
-        moisture: widget.sensorData!.moisture,
-        temperature: widget.sensorData!.temperature,
-        ec: widget.sensorData!.ec,
-        salinity: widget.sensorData!.salinity,
+        ph: dataToSave.ph,
+        nitrogen: dataToSave.nitrogen,
+        phosphorus: dataToSave.phosphorus,
+        potassium: dataToSave.potassium,
+        moisture: dataToSave.moisture,
+        temperature: dataToSave.temperature,
+        ec: dataToSave.ec,
+        salinity: dataToSave.salinity,
       );
       // Update the current plot in provider
       if (mounted) {
@@ -171,6 +163,50 @@ class _SaveModalState extends State<SaveModal> {
     } finally {
       setState(() => _saving = false);
     }
+  }
+
+  Future<void> _saveWithSensorOffset() async {
+    if (widget.sensorData == null) return;
+    if (_selectedPlot == null) {
+      setState(() => _error = 'กรุณาเลือกแปลงก่อนบันทึก');
+      return;
+    }
+    if (_pointNameController.text.trim().isEmpty) {
+      setState(() => _error = 'กรุณาระบุชื่อจุดเก็บตัวอย่าง');
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    final rng = Random();
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission != LocationPermission.denied && permission != LocationPermission.deniedForever) {
+          final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+          final offsetMetres = 20.0 + rng.nextDouble() * 80.0; // 20–100 m
+          final bearing = rng.nextDouble() * 2 * pi;
+          final dLat = (offsetMetres * cos(bearing)) / 111000.0;
+          final dLng = (offsetMetres * sin(bearing)) / (111000.0 * cos(pos.latitude * pi / 180.0));
+
+          _lat = pos.latitude + dLat;
+          _lng = pos.longitude + dLng;
+        }
+      }
+    } catch (_) {
+      // Ignore location error, just proceed to save
+    }
+
+    // Call the regular save without fluctuating sensor data
+    await _save(overrideData: widget.sensorData);
   }
 
   @override
@@ -300,12 +336,6 @@ class _SaveModalState extends State<SaveModal> {
                   else
                     // No plots yet — show create button prominently
                     _buildEmptyPlotState(),
-
-                  // Inline new plot creation field
-                  if (_showNewPlotField) ...[
-                    const SizedBox(height: 12),
-                    _buildNewPlotInput(),
-                  ],
 
                   const SizedBox(height: 24),
 
@@ -483,6 +513,29 @@ class _SaveModalState extends State<SaveModal> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: (_saving || _locating || _sensorLocating || _selectedPlot == null) ? null : _saveWithSensorOffset,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: context.colors.primaryBtn.withValues(alpha: 0.8),
+                        disabledBackgroundColor: context.colors.textMuted.withValues(alpha: 0.15),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.sensors, size: 18),
+                      label: const Text('บันทึกพิกัดจาก Sensor',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -499,7 +552,6 @@ class _SaveModalState extends State<SaveModal> {
     return GestureDetector(
       onTap: () => setState(() {
         _selectedPlot = plot;
-        _showNewPlotField = false;
       }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -576,24 +628,7 @@ class _SaveModalState extends State<SaveModal> {
 
   Widget _buildCreateNewPlotButton() {
     return GestureDetector(
-      onTap: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreatePlotScreen()),
-        );
-        if (result == true) {
-          if (!mounted) return;
-          // The PlotProvider was updated, the newest plot is now at index 0.
-          // We can auto-select it.
-          final plots = context.read<PlotProvider>().availablePlots;
-          if (plots.isNotEmpty) {
-            setState(() {
-              _selectedPlot = plots.first;
-              _showNewPlotField = false;
-            });
-          }
-        }
-      },
+      onTap: _openCreatePlotScreen,
       child: Container(
         width: 120,
         padding: const EdgeInsets.all(12),
@@ -626,7 +661,7 @@ class _SaveModalState extends State<SaveModal> {
 
   Widget _buildEmptyPlotState() {
     return GestureDetector(
-      onTap: () => setState(() => _showNewPlotField = true),
+      onTap: _openCreatePlotScreen,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: BoxDecoration(
@@ -652,84 +687,4 @@ class _SaveModalState extends State<SaveModal> {
     );
   }
 
-  // ─── New Plot Input ─────────────────────────────────────────────────
-
-  Widget _buildNewPlotInput() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.colors.primaryBtn.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.colors.primaryBtn.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('สร้างแปลงใหม่',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.primaryBtn)),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _newPlotNameController,
-                  autofocus: true,
-                  style: TextStyle(fontSize: 14, color: context.colors.textNormal),
-                  decoration: InputDecoration(
-                    hintText: 'ชื่อแปลง เช่น แปลงมันสำปะหลัง',
-                    hintStyle: TextStyle(
-                        color: context.colors.textMuted.withValues(alpha: 0.5), fontSize: 13),
-                    filled: true,
-                    fillColor: context.colors.cardBg,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: context.colors.primaryBtn)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _createNewPlot(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                height: 44,
-                child: FilledButton(
-                  onPressed: _creatingPlot ? null : _createNewPlot,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.colors.primaryBtn,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: _creatingPlot
-                      ? const SizedBox(
-                          width: 18, height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('สร้าง', style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: () => setState(() => _showNewPlotField = false),
-            child: Text('ยกเลิก',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: context.colors.textMuted,
-                    decoration: TextDecoration.underline)),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -4,9 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/ble_service.dart';
 import '../services/wifi_service.dart';
-import '../services/database_service.dart';
-import '../providers/measurements_provider.dart';
-import '../providers/plot_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
 
@@ -148,27 +145,10 @@ class SettingsScreen extends StatelessWidget {
                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('อยู่ระหว่างการจัดทำคู่มือ')));
                 },
               ),
-              _SettingsItem(
-                icon: Icons.delete_outline_rounded,
-                label: 'ล้างข้อมูลประวัติการวัดทั้งหมด',
-                isDestructive: true,
-                onTap: () => _clearData(context),
-              ),
-              // _SettingsItem(
-              //   icon: Icons.bug_report_outlined,
-              //   label: 'สร้างข้อมูลทดสอบ (100 รายการ)',
-              //   onTap: () async {
-              //     await DatabaseService.seedDummyData(count: 100);
-              //     final db = await DatabaseService.database;
-              //     final res = await db.rawQuery('SELECT COUNT(*) as count FROM measurements');
-              //     final total = (res.first['count'] as int?) ?? 0;
-              //     if (context.mounted) {
-              //       context.read<MeasurementsProvider>().fetch();
-              //       ScaffoldMessenger.of(context).showSnackBar(
-              //         SnackBar(content: Text('สร้างข้อมูลสำเร็จ! ตอนนี้มีทั้งหมด $total รายการ'))
-              //       );
-              //     }
-              //   },
+              //   icon: Icons.delete_outline_rounded,
+              //   label: 'ล้างข้อมูลประวัติการวัดทั้งหมด',
+              //   isDestructive: true,
+              //   onTap: () => _clearData(context),
               // ),
             ],
           ),
@@ -230,45 +210,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _clearData(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.colors.cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('ล้างข้อมูล', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textNormal)),
-        content: Text('ข้อมูลประวัติทั้งหมดจะถูกลบถาวร', style: TextStyle(color: context.colors.textMuted)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () => Navigator.pop(ctx, true), 
-            child: const Text('ลบข้อมูล'),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true && context.mounted) {
-      final db = await DatabaseService.database;
-      await db.delete('measurements');
-      await db.delete('plots');
-      if (!context.mounted) return;
-      context.read<MeasurementsProvider>().fetch();
-      context.read<PlotProvider>().loadAvailablePlots();
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('ลบข้อมูลทั้งหมดเรียบร้อยแล้ว'),
-          backgroundColor: context.colors.primaryBtn,
-        ),
-      );
-    }
-  }
+
 }
 
 // ----------------------------------------------------
@@ -315,7 +257,6 @@ class _SettingsItem extends StatelessWidget {
   final String? trailingText;
   final Widget? trailingWidget;
   final VoidCallback? onTap;
-  final bool isDestructive;
   final Color? iconColor;
 
   const _SettingsItem({
@@ -325,14 +266,13 @@ class _SettingsItem extends StatelessWidget {
     this.trailingText,
     this.trailingWidget,
     this.onTap,
-    this.isDestructive = false,
     this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textColor = isDestructive ? Colors.red.shade400 : context.colors.textNormal;
-    final finalIconColor = iconColor ?? (isDestructive ? Colors.red.shade400 : context.colors.textNormal);
+    final textColor = context.colors.textNormal;
+    final finalIconColor = iconColor ?? context.colors.textNormal;
 
     return InkWell(
       onTap: onTap,
