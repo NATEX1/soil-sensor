@@ -519,7 +519,7 @@ class _SaveModalState extends State<SaveModal> {
                     child: FilledButton.icon(
                       onPressed: (_saving || _locating || _sensorLocating || _selectedPlot == null) ? null : _saveWithSensorOffset,
                       style: FilledButton.styleFrom(
-                        backgroundColor: context.colors.primaryBtn.withValues(alpha: 0.8),
+                        backgroundColor: context.colors.primaryBtn,
                         disabledBackgroundColor: context.colors.textMuted.withValues(alpha: 0.15),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
