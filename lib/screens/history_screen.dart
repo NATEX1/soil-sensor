@@ -58,17 +58,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
-            child: ListView(
+            child: CustomScrollView(
               controller: _scrollController,
               physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-              padding: EdgeInsets.fromLTRB(
-                isTablet ? 40 : 20, 
-                topPadding + 20, 
-                isTablet ? 40 : 20, 
-                bottomPadding + 24
-              ),
-              children: [
-                // — Minimal Header —
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isTablet ? 40 : 20, 
+                      topPadding + 20, 
+                      isTablet ? 40 : 20, 
+                      0
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // — Minimal Header —
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,15 +184,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ],
                       ),
                     ),
-                  )
-                else ...[
-                  HistoryListView(
-                    plots: provider.plots,
-                    onDelete: (id) {
-                      provider.remove(id);
-                      context.read<PlotProvider>().loadAvailablePlots();
-                    },
                   ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (provider.error == null && !provider.loading && provider.plots.isNotEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
+                    sliver: HistoryListView(
+                      plots: provider.plots,
+                      onDelete: (id) {
+                        provider.remove(id);
+                        context.read<PlotProvider>().loadAvailablePlots();
+                      },
+                    ),
+                  ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isTablet ? 40 : 20, 
+                      0, 
+                      isTablet ? 40 : 20, 
+                      bottomPadding + 24
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   if (provider.loadingMore)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -205,7 +228,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                       ),
                     ),
-                ],
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

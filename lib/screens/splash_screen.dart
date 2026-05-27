@@ -12,8 +12,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
   late Animation<double> _sponsorFadeAnimation;
 
   @override
@@ -22,20 +20,6 @@ class _SplashScreenState extends State<SplashScreen>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-      ),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-      ),
     );
 
     // Sponsor logos fade in slightly later
@@ -72,52 +56,30 @@ class _SplashScreenState extends State<SplashScreen>
           children: [
             // Center: Main logo + loading indicator
             Center(
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: child,
-                    ),
-                  );
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 160,
-                      height: 160,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(36),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.colors.primaryBtn.withValues(alpha: 0.2),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          )
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(36),
-                        child: Image.asset(
-                          'assets/logos/soilava_logo_light_theme.png',
-                          fit: BoxFit.cover,
-                        ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(36),
+                      child: Image.asset(
+                        'assets/logos/soilava_logo_light_theme.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: context.colors.primaryBtn,
-                      ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: context.colors.primaryBtn,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

@@ -186,9 +186,17 @@ class _HistoryChartState extends State<HistoryChart> {
           const SizedBox(height: 16),
 
           // The chart
-          SizedBox(
-            height: 180,
-            child: LineChart(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              height: 180,
+              width: sorted.length <= 5 
+                  ? MediaQuery.of(context).size.width - 32 
+                  : (sorted.length * 70.0).toDouble(),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16, left: 8),
+                child: LineChart(
               LineChartData(
                 minY: minY,
                 maxY: maxY,
@@ -236,17 +244,23 @@ class _HistoryChartState extends State<HistoryChart> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
-                      interval: _calcInterval(sorted.length),
+                      reservedSize: 54,
+                      interval: 1,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
                         if (idx < 0 || idx >= sorted.length) return const SizedBox.shrink();
-                        final date = dateMap[idx]!;
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            '${date.day}/${date.month}',
-                            style: TextStyle(fontSize: 9, color: context.colors.textMuted),
+                        final plot = sorted[idx];
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          space: 12,
+                          child: Transform.rotate(
+                            angle: -0.5,
+                            child: Text(
+                              plot.name,
+                              style: TextStyle(fontSize: 9, color: context.colors.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         );
                       },
@@ -345,6 +359,8 @@ class _HistoryChartState extends State<HistoryChart> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
             ),
+          ),
+          ),
           ),
 
           // Legend

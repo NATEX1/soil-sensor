@@ -36,11 +36,12 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<MeasurementsProvider>();
+    final isLoading = context.select<MeasurementsProvider, bool>((p) => p.loading);
+    final allPlots = context.select<MeasurementsProvider, List<PlotRecord>>((p) => p.allPlots);
     
     // Create PlotMarkers (Centroid of each plot)
     final plotMarkers = <PlotMarker>[];
-    for (var p in provider.allPlots) {
+    for (var p in allPlots) {
       final validMeasurements = p.measurements.toList(); // เอาทุกจุด ไม่กรอง 0 ออก
       if (validMeasurements.isEmpty) continue;
 
@@ -109,7 +110,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
-          if (provider.loading)
+          if (isLoading)
             Expanded(
               child: Center(
                   child: Column(

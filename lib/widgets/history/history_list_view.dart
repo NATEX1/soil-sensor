@@ -15,9 +15,7 @@ class HistoryListView extends StatelessWidget {
     final isTablet = screenWidth > 600;
     
     if (isTablet) {
-      return GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+      return SliverGrid.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
@@ -29,11 +27,12 @@ class HistoryListView extends StatelessWidget {
       );
     }
 
-    return Column(
-      children: plots.map((p) => Padding(
+    return SliverList.builder(
+      itemCount: plots.length,
+      itemBuilder: (context, index) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: _buildCard(context, p),
-      )).toList(),
+        child: _buildCard(context, plots[index]),
+      ),
     );
   }
 

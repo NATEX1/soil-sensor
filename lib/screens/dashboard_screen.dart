@@ -101,16 +101,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ble = context.watch<BleService>();
-    final wifi = context.watch<WiFiService>();
-    final plotProvider = context.watch<PlotProvider>();
-    final activeData = _getActiveData(ble, wifi, plotProvider);
-    
-    final isAnyConnected = ble.isConnected || wifi.isConnected;
-    final hasRealData = (ble.isConnected && ble.sensorData != null) || 
-                        (wifi.isConnected && wifi.sensorData != null) ||
-                        (plotProvider.currentPlot != null && plotProvider.currentPlot!.measurements.isNotEmpty);
-    final activeLastUpdate = _getActiveLastUpdate(ble, wifi, plotProvider);
+    final isBleConnected = context.select<BleService, bool>((b) => b.isConnected);
+    final isWifiConnected = context.select<WiFiService, bool>((w) => w.isConnected);
+    final isConnected = _connectionMode == ConnectionMode.ble ? isBleConnected : isWifiConnected;
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -144,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
                 ConnectionPill(
-                  isConnected: _connectionMode == ConnectionMode.ble ? ble.isConnected : wifi.isConnected,
+                  isConnected: isConnected,
                   mode: _connectionMode,
                 ),
               ],
@@ -188,13 +181,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // ═══════════════════════════════════════════
             // Active Connection Check
             // ═══════════════════════════════════════════
-            if ((_connectionMode == ConnectionMode.wifi && !wifi.isConnected) || 
-                (_connectionMode == ConnectionMode.ble && !ble.isConnected)) ...[
-              // — Show scan UI for the selected mode —
+            if (!isConnected)
+              Consumer2<BleService, WiFiService>(
+                builder: (context, ble, wifi, child) {
+                  return Column(
+                    children: [
+                      // — Show scan UI for the selected mode —
 
-              const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-              Container(
+                      Container(
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                 decoration: BoxDecoration(
                   color: context.colors.cardBg,
@@ -393,14 +389,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-            ] else ...[
-              // ═══════════════════════════════════════════
-              // When connected: show sensors
-              // ═══════════════════════════════════════════
-              
-              // — Device info —
-              Row(
-                children: [
+                    ],
+                  );
+                },
+              )
+            else
+              Consumer3<BleService, WiFiService, PlotProvider>(
+                builder: (context, ble, wifi, plotProvider, child) {
+                  final activeData = _getActiveData(ble, wifi, plotProvider);
+                  final activeLastUpdate = _getActiveLastUpdate(ble, wifi, plotProvider);
+                  final isAnyConnected = ble.isConnected || wifi.isConnected;
+                  final hasRealData = (ble.isConnected && ble.sensorData != null) || 
+                                      (wifi.isConnected && wifi.sensorData != null) ||
+                                      (plotProvider.currentPlot != null && plotProvider.currentPlot!.measurements.isNotEmpty);
+                  
+                  return Column(
+                    children: [
+                      // ═══════════════════════════════════════════
+                      // When connected: show sensors
+                      // ═══════════════════════════════════════════
+                      
+                      // — Device info —
+                      Row(
+                        children: [
                   Icon(_connectionMode == ConnectionMode.ble ? Icons.bluetooth_connected : Icons.wifi,
                       color: context.colors.primaryBtn, size: 13),
                   const SizedBox(width: 4),
@@ -469,74 +480,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 20),
 
               // — Action Buttons —
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => SaveModal(
-                            sensorData: activeData,
-                            onClose: () => Navigator.of(context).pop(),
-                            onSaved: () async {
-                              Navigator.of(context).pop();
-                              await plotProvider.refreshCurrentPlot();
-                              if (context.mounted) {
-                                context.read<MeasurementsProvider>().fetch();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('บันทึกข้อมูลสำเร็จ', style: TextStyle(color: Colors.white)),
-                                    backgroundColor: Colors.green.shade600,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        );
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: context.colors.primaryBtn,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      icon: const Icon(Icons.save_outlined, size: 18),
-                      label: const Text('บันทึก',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                         if (plotProvider.currentPlot == null || plotProvider.currentPlot!.measurements.isEmpty) {
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => SaveModal(
+                        sensorData: activeData,
+                        onClose: () => Navigator.of(context).pop(),
+                        onSaved: () async {
+                          Navigator.of(context).pop();
+                          await plotProvider.refreshCurrentPlot();
+                          if (context.mounted) {
+                            context.read<MeasurementsProvider>().fetch();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('กรุณาบันทึกค่าอย่างน้อย 1 จุดในแปลงก่อนดูคำแนะนำ'))
+                              SnackBar(
+                                content: const Text('บันทึกข้อมูลสำเร็จ', style: TextStyle(color: Colors.white)),
+                                backgroundColor: Colors.green.shade600,
+                                behavior: SnackBarBehavior.floating,
+                              ),
                             );
-                            return;
-                         }
-                         context.push('/recommend', extra: plotProvider.currentPlot);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.colors.primaryBtn,
-                        side: BorderSide(color: context.colors.borderColor),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                          }
+                        },
                       ),
-                      icon: const Icon(Icons.lightbulb_outline, size: 18),
-                      label: const Text('คำแนะนำ',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                    ),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.colors.primaryBtn,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
-                ],
+                  icon: const Icon(Icons.save_outlined, size: 18),
+                  label: const Text('บันทึก',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
               ),
             ],
-            const SizedBox(height: 24),
+          );
+        },
+      ),
+      const SizedBox(height: 24),
           ],
         ),
       ),
