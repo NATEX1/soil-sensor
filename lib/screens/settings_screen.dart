@@ -40,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
                           color: context.colors.textNormal,
                           letterSpacing: -0.5)),
                   const SizedBox(height: 2),
-                  Text('จัดการระบบแอปพลิเคชัน',
+                  Text('จัดการการตั้งค่าแอปพลิเคชัน',
                       style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
                 ],
               ),
@@ -69,7 +69,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      isAnyConnected ? 'Online' : 'Offline',
+                      isAnyConnected ? 'ออนไลน์' : 'ออฟไลน์',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -91,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
               _SettingsItem(
                 icon: Icons.wifi_rounded,
                 iconColor: wifi.isConnected ? context.colors.primaryBtn : context.colors.textNormal,
-                label: 'การเชื่อมต่อ Wi-Fi',
+                label: 'การเชื่อมต่อไวไฟ',
                 subtitle: wifi.isConnected ? (wifi.deviceIp ?? 'ออนไลน์') : null,
                 trailingText: !wifi.isConnected ? 'ไม่ได้เชื่อมต่อ' : null,
                 trailingWidget: wifi.isConnected ? _buildDisconnectButton(context, () => _confirmWifiDisconnect(context, wifi)) : null,
@@ -99,21 +99,21 @@ class SettingsScreen extends StatelessWidget {
               _SettingsItem(
                 icon: Icons.bluetooth_rounded,
                 iconColor: ble.isConnected ? context.colors.primaryBtn : context.colors.textNormal,
-                label: 'การเชื่อมต่อ Bluetooth',
+                label: 'การเชื่อมต่อบลูทูธ',
                 subtitle: ble.isConnected 
-                    ? (ble.isDemoMode ? 'โหมดจำลอง (Demo)' : 'MAC: ${ble.connectedDevice?.remoteId.str ?? 'ไม่ทราบข้อมูล'}') 
+                    ? (ble.isDemoMode ? 'โหมดทดลอง' : 'MAC: ${ble.connectedDevice?.remoteId.str ?? 'ไม่ทราบ'}') 
                     : null,
                 trailingText: !ble.isConnected ? 'ไม่ได้เชื่อมต่อ' : null,
                 trailingWidget: ble.isConnected ? _buildDisconnectButton(context, () => _confirmDisconnect(context, ble)) : null,
               ),
               _SettingsItem(
                 icon: Icons.grass_rounded,
-                label: 'จัดการชนิดพืช',
+                label: 'จัดการพืช',
                 onTap: () => context.push('/settings/plants'),
               ),
               _SettingsItem(
                 icon: Icons.dark_mode_rounded,
-                label: 'โหมดกลางคืน (Dark mode)',
+                label: 'โหมดมืด',
                 trailingWidget: CupertinoSwitch(
                   value: themeProvider.isDarkMode,
                   onChanged: (_) => themeProvider.toggleTheme(),
@@ -132,7 +132,7 @@ class SettingsScreen extends StatelessWidget {
             items: [
               _SettingsItem(
                 icon: Icons.info_outline_rounded,
-                label: 'เกี่ยวกับแอปพลิเคชัน',
+                label: 'เกี่ยวกับ',
                 trailingText: '1.0.0',
                 onTap: () {
                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('เวอร์ชันปัจจุบัน: 1.0.0')));
@@ -142,7 +142,7 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.help_outline_rounded,
                 label: 'คู่มือการใช้งาน',
                 onTap: () {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('อยู่ระหว่างการจัดทำคู่มือ')));
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('กำลังเตรียมคู่มือการใช้งาน')));
                 },
               ),
               //   icon: Icons.delete_outline_rounded,
@@ -178,11 +178,11 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _confirmDisconnect(BuildContext context, BleService ble) {
-    _showConfirm(context, 'Bluetooth', () => ble.disconnect());
+    _showConfirm(context, 'บลูทูธ', () => ble.disconnect());
   }
 
   void _confirmWifiDisconnect(BuildContext context, WiFiService wifi) {
-    _showConfirm(context, 'Wi-Fi', () => wifi.disconnect());
+    _showConfirm(context, 'ไวไฟ', () => wifi.disconnect());
   }
 
   void _showConfirm(BuildContext context, String title, Future<void> Function() onConfirm) {
@@ -191,8 +191,8 @@ class SettingsScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('ยุติการเชื่อมต่อ $title', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textNormal)),
-        content: Text('คุณต้องการตัดการเชื่อมต่อจากอุปกรณ์พกพาใช่หรือไม่?', style: TextStyle(color: context.colors.textMuted)),
+        title: Text('ตัดการเชื่อมต่อ $title', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textNormal)),
+        content: Text('คุณแน่ใจหรือไม่ว่าต้องการตัดการเชื่อมต่อจากอุปกรณ์นี้?', style: TextStyle(color: context.colors.textMuted)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted))),
           ElevatedButton(

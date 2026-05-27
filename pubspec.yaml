@@ -48,6 +48,7 @@ dependencies:
   shared_preferences: any
   geocoding: ^4.0.0
   flutter_svg: ^2.3.0
+  google_fonts: ^8.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

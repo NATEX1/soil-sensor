@@ -40,7 +40,7 @@ class ConnectionPill extends StatelessWidget {
             const SizedBox(width: 3),
           ],
           Text(
-            isConnected ? 'Online' : 'Offline',
+            isConnected ? 'ออนไลน์' : 'ออฟไลน์',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,

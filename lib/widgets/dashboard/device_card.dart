@@ -53,7 +53,7 @@ class DeviceCard extends StatelessWidget {
                 Text(
                   device.platformName.isNotEmpty
                       ? device.platformName
-                      : 'Unknown',
+                      : 'ไม่ทราบชื่อ',
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,

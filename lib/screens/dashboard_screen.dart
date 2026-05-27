@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/ble_service.dart';
 import '../services/wifi_service.dart';
 import '../providers/measurements_provider.dart';
@@ -83,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เชื่อมต่อกับ ${device.platformName.isNotEmpty ? device.platformName : "อุปกรณ์"} สำเร็จ'),
+            content: Text('เชื่อมต่อกับ ${device.platformName.isNotEmpty ? device.platformName : "อุปกรณ์"} แล้ว'),
             backgroundColor: const Color(0xFF16a34a),
           ),
         );
@@ -92,7 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่'),
+              content: Text('การเชื่อมต่อล้มเหลว กรุณาลองอีกครั้ง'),
               backgroundColor: Color(0xFFef4444)),
         );
       }
@@ -124,11 +124,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Soilava',
-                        style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: context.colors.textNormal,
-                            letterSpacing: -0.5)),
+                        style: GoogleFonts.inter(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textNormal,
+                          letterSpacing: -1.0,
+                        )),
                     const SizedBox(height: 2),
                     Text('ระบบวิเคราะห์ดินอัจฉริยะ',
                         style: TextStyle(
@@ -143,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
 
             // — Mode Selector (Always Visible) —
             Center(
@@ -151,7 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 260,
                 decoration: BoxDecoration(
                   color: context.colors.cardBg,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: context.colors.borderColor),
                 ),
                 child: Row(
@@ -159,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(
                       child: ModeTab(
                         icon: Icons.wifi,
-                        label: 'WiFi',
+                        label: 'ไวไฟ',
                         isSelected: _connectionMode == ConnectionMode.wifi,
                         onTap: () => setState(() => _connectionMode = ConnectionMode.wifi),
                       ),
@@ -167,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(
                       child: ModeTab(
                         icon: Icons.bluetooth,
-                        label: 'Bluetooth',
+                        label: 'บลูทูธ',
                         isSelected: _connectionMode == ConnectionMode.ble,
                         onTap: () => setState(() => _connectionMode = ConnectionMode.ble),
                       ),
@@ -176,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 48),
 
             // ═══════════════════════════════════════════
             // Active Connection Check
@@ -194,9 +195,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                 decoration: BoxDecoration(
                   color: context.colors.cardBg,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: context.colors.borderColor.withValues(alpha: 0.5),
+                    color: context.colors.borderColor,
                   ),
                 ),
                 child: Builder(
@@ -217,7 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Text(
                             isScanning
                                 ? 'กำลังค้นหาอุปกรณ์...'
-                                : 'แตะเพื่อค้นหา Soilava',
+                                : 'แตะเพื่อค้นหาอุปกรณ์',
                             key: ValueKey(isScanning),
                             style: TextStyle(
                               fontSize: 15,
@@ -256,10 +257,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   foregroundColor: isScanning
                                       ? context.colors.textNormal
                                       : Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
                                   elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
                                 icon: Icon(
                                     isScanning
@@ -282,14 +283,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   foregroundColor: context.colors.primaryBtn,
                                   side: BorderSide(
                                       color: context.colors.borderColor),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14)),
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
                                 icon: const Icon(Icons.science_outlined,
                                     size: 18),
-                                label: const Text('Demo',
+                                label: const Text('ทดลอง',
                                     style:
                                         TextStyle(fontWeight: FontWeight.w600)),
                               ),
@@ -382,8 +382,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 5),
                   Text(
                     _connectionMode == ConnectionMode.ble
-                        ? 'ต้องเปิด Bluetooth และอนุญาตสิทธิ์ Location'
-                        : 'ต้องเชื่อมต่อ WiFi วงเดียวกันกับอุปกรณ์',
+                        ? 'เปิดบลูทูธและอนุญาตตำแหน่ง'
+                        : 'ต้องเชื่อมต่อไวไฟเครือข่ายเดียวกับอุปกรณ์',
                     style: TextStyle(
                         fontSize: 11, color: context.colors.textMuted),
                   ),
@@ -419,8 +419,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _connectionMode == ConnectionMode.ble 
                         ? ((ble.connectedDevice != null && ble.connectedDevice!.platformName.isNotEmpty)
                             ? ble.connectedDevice!.platformName
-                            : 'Soilava (Bluetooth)')
-                        : 'Soilava (WiFi)',
+                            : 'Soilava (บลูทูธ)')
+                        : 'Soilava (ไวไฟ)',
                     style: TextStyle(
                         color: context.colors.textMuted, fontSize: 12),
                   ),
@@ -442,7 +442,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Icon(Icons.info_outline,
                         size: 12, color: context.colors.warningText),
                     const SizedBox(width: 4),
-                    Text('ข้อมูลจากแคช',
+                    Text('ข้อมูลที่แคชไว้',
                         style: TextStyle(
                             fontSize: 11,
                             color: context.colors.warningText)),
@@ -453,12 +453,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 4),
 
               // — Sensor Grid —
-              Text('ค่าเซ็นเซอร์ (เฉลี่ยของแปลง หรือ ค่าสด)',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.textNormal)),
-              const SizedBox(height: 6),
+              
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
@@ -477,7 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 }).toList(),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 48),
 
               // — Action Buttons —
               SizedBox(
@@ -510,9 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: context.colors.primaryBtn,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   icon: const Icon(Icons.save_outlined, size: 18),
                   label: const Text('บันทึก',

@@ -81,7 +81,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('ประวัติการวัด',
+                        Text('ประวัติ',
                             style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w800,
@@ -177,7 +177,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Icon(Icons.history_rounded, size: 64, color: context.colors.textMuted.withValues(alpha: 0.3)),
                           const SizedBox(height: 16),
                           Text(
-                            'ไม่พบประวัติการวัด\nในช่วงเวลาที่เลือก',
+                            'ไม่พบข้อมูลการวัด\nในช่วงเวลาที่เลือก',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: context.colors.textMuted, fontSize: 15, height: 1.5),
                           ),
@@ -277,7 +277,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (plots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('ไม่มีข้อมูลสำหรับส่งออก', style: TextStyle(color: context.colors.errorText)),
+            content: Text('ไม่มีข้อมูลที่ส่งออก', style: TextStyle(color: context.colors.errorText)),
             backgroundColor: context.colors.errorBg),
       );
       return;
@@ -300,11 +300,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       // Add Header
       sheetObject.appendRow([
         TextCellValue('วันที่/เวลา'),
-        TextCellValue('จุดที่เก็บ'),
+        TextCellValue('ชื่อจุด'),
         TextCellValue('แปลง'),
-        TextCellValue('วิธีเก็บตัวอย่าง'),
-        TextCellValue('ละติจูด (Lat)'),
-        TextCellValue('ลองจิจูด (Lng)'),
+        TextCellValue('วิธีการเก็บ'),
+        TextCellValue('ละติจูด'),
+        TextCellValue('ลองจิจูด'),
         TextCellValue('หมายเหตุ'),
         TextCellValue('pH'),
         TextCellValue('ไนโตรเจน (mg/kg)'),
@@ -354,7 +354,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        await Share.shareXFiles([XFile(filePath)], text: 'ข้อมูลเซ็นเซอร์ดิน');
+        await Share.shareXFiles([XFile(filePath)], text: 'Soil sensor data');
       }
     } catch (e) {
       if (context.mounted) {
@@ -498,7 +498,7 @@ class _CustomDateSheetState extends State<_CustomDateSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('กำหนดช่วงเวลา',
+                Text('เลือกช่วงวันที่',
                     style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -547,7 +547,7 @@ class _CustomDateSheetState extends State<_CustomDateSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   disabledBackgroundColor: context.colors.borderColor,
                 ),
-                child: const Text('ตกลง', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                child: const Text('ยืนยัน', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),
           ],

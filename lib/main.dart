@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'services/ble_service.dart';
 import 'services/wifi_service.dart';
 import 'providers/measurements_provider.dart';
@@ -115,17 +116,72 @@ class SoilavaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    
+    final baseTextTheme = GoogleFonts.promptTextTheme();
 
     return MaterialApp.router(
       title: 'Soilava',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF16a34a)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF16a34a),
+          primary: const Color(0xFF16a34a),
+          surface: const Color(0xFFffffff),
+          onSurface: const Color(0xFF09090b),
+          outline: const Color(0xFFe4e4e7),
+        ),
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xFFf9fafb),
-        cardColor: Colors.white,
+        textTheme: baseTextTheme,
+        scaffoldBackgroundColor: const Color(0xFFffffff),
+        cardColor: const Color(0xFFffffff),
+        cardTheme: const CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            side: BorderSide(color: Color(0xFFe4e4e7), width: 1),
+          ),
+          clipBehavior: Clip.antiAlias,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: const Color(0xFF16a34a),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            minimumSize: const Size.fromHeight(44),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF09090b),
+            side: const BorderSide(color: Color(0xFFe4e4e7)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            minimumSize: const Size.fromHeight(44),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFe4e4e7)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFe4e4e7)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF16a34a), width: 2),
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: Color(0xFFe4e4e7),
+          thickness: 1,
+          space: 1,
+        ),
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
@@ -136,18 +192,67 @@ class SoilavaApp extends StatelessWidget {
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF15803d),
+          primary: Color(0xFF16a34a),
           onPrimary: Colors.white,
           secondary: Color(0xFF16a34a),
-          surface: Color(0xFF1f2937),
-          onSurface: Color(0xFFf3f4f6),
-          error: Color(0xFFef4444),
-          onError: Colors.white,
+          surface: Color(0xFF09090b),
+          onSurface: Color(0xFFfafafa),
+          error: Color(0xFF450a0a),
+          onError: Color(0xFFf87171),
+          outline: Color(0xFF27272a),
         ),
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xFF111827),
-        cardColor: const Color(0xFF1f2937),
+        textTheme: GoogleFonts.promptTextTheme(ThemeData.dark().textTheme),
+        scaffoldBackgroundColor: const Color(0xFF09090b),
+        cardColor: const Color(0xFF09090b),
+        cardTheme: const CardThemeData(
+          elevation: 0,
+          color: Color(0xFF09090b),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            side: BorderSide(color: Color(0xFF27272a), width: 1),
+          ),
+          clipBehavior: Clip.antiAlias,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: const Color(0xFF16a34a),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            minimumSize: const Size.fromHeight(44),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFfafafa),
+            side: const BorderSide(color: Color(0xFF27272a)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            minimumSize: const Size.fromHeight(44),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF27272a)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF27272a)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF16a34a), width: 2),
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: Color(0xFF27272a),
+          thickness: 1,
+          space: 1,
+        ),
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
@@ -175,10 +280,10 @@ class MainShell extends StatelessWidget {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF111827) : Colors.white, // Match scaffold/pure white
+          color: isDark ? const Color(0xFF09090b) : Colors.white,
           border: Border(
             top: BorderSide(
-              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+              color: isDark ? const Color(0xFF27272a) : const Color(0xFFe4e4e7),
               width: 1,
             ),
           ),
@@ -195,8 +300,8 @@ class MainShell extends StatelessWidget {
               elevation: 0,
               backgroundColor: Colors.transparent,
               type: BottomNavigationBarType.fixed,
-              selectedItemColor: isDark ? const Color(0xFF4ade80) : const Color(0xFF16a34a),
-              unselectedItemColor: isDark ? const Color(0xFF6b7280) : const Color(0xFF9ca3af),
+              selectedItemColor: isDark ? const Color(0xFF16a34a) : const Color(0xFF16a34a),
+              unselectedItemColor: isDark ? const Color(0xFF71717a) : const Color(0xFFa1a1aa),
               selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.2),
               unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
               onTap: (index) => navigationShell.goBranch(
