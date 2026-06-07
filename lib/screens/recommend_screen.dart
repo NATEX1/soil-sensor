@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+
+import '../theme/app_colors.dart';
 import '../models/sensor_data.dart';
 import '../models/calculations.dart';
+import '../services/api_service.dart';
 import '../providers/measurements_provider.dart';
 import '../providers/plot_provider.dart';
-import '../services/api_service.dart';
-import '../theme/app_colors.dart';
 
 class RecommendScreen extends StatefulWidget {
   final PlotRecord? plot;
@@ -37,153 +38,6 @@ class _RecommendScreenState extends State<RecommendScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoadingPlants) {
-      return Scaffold(
-        backgroundColor: context.colors.scaffoldBg,
-        body: Center(child: CircularProgressIndicator(color: context.colors.primaryBtn)),
-      );
-    }
-
-    final topPadding = MediaQuery.of(context).padding.top;
-
-    if (plot == null || plot!.measurements.isEmpty) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.sensors_off, size: 48, color: context.colors.textMuted),
-              const SizedBox(height: 12),
-              Text('ไม่มีข้อมูลแปลง\nกรุณาบันทึกค่าอย่างน้อย 1 จุด',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: context.colors.textMuted)),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => context.pop(),
-                    style: TextButton.styleFrom(foregroundColor: context.colors.primaryBtn),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('กลับ'),
-                  ),
-                  const SizedBox(width: 16),
-                  OutlinedButton.icon(
-                    onPressed: () => _confirmDelete(context),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade400,
-                      side: BorderSide(color: Colors.red.shade300),
-                    ),
-                    icon: Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade400),
-                    label: const Text('ลบแปลง'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final top3 = evaluateSuitability(plot!, _varieties);
-
-    return Scaffold(
-      body: ListView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        padding: EdgeInsets.fromLTRB(20, topPadding + 16, 20, 32),
-        children: [
-          // ── Header ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () => context.pop(),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(Icons.arrow_back_ios_new, size: 20, color: context.colors.textNormal),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () => _confirmDelete(context),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(Icons.delete_outline_rounded, size: 22, color: Colors.red.shade400),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Text('ผลการวิเคราะห์',
-              style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: context.colors.textNormal,
-                  letterSpacing: -0.5)),
-          const SizedBox(height: 2),
-          Text('แปลง: ${plot!.name}  •  ${plot!.measurementCount} จุดวัด',
-              style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
-
-          const SizedBox(height: 20),
-
-          // ── Measurement Points List ──
-          _MeasurementList(measurements: plot!.measurements),
-
-          const SizedBox(height: 20),
-
-          // ── Browse all varieties button ──
-          OutlinedButton.icon(
-            onPressed: () => _showAllSheet(context),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.colors.primaryBtn,
-              side: BorderSide(color: context.colors.borderColor),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            icon: const Icon(Icons.list_alt_rounded, size: 18),
-            label: Text(
-              'เปรียบเทียบสายพันธุ์ทั้งหมด (${_varieties.length} ชนิด)',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // ── Section title ──
-          Row(
-            children: [
-              Text('ความเหมาะสม 3 อันดับแรก',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.textNormal)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text('คำนวณจากค่าเฉลี่ยแปลง',
-              style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
-          const SizedBox(height: 14),
-
-          // ── Top 3 Cassava cards ──
-          ...top3.asMap().entries.map((entry) {
-            final rank = entry.key + 1;
-            final s = entry.value;
-            final variety = _varieties.firstWhere((v) => v.id == s.plantId);
-            return _CassavaCard(
-              suitability: s, 
-              rank: rank, 
-              variety: variety, 
-              plot: plot!
-            );
-          }),
-
-        ],
-      ),
-    );
-  }
-
   void _showAllSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -193,177 +47,251 @@ class _RecommendScreenState extends State<RecommendScreen> {
     );
   }
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
+  Future<void> _confirmDelete() async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('ลบแปลง',
+        actionsAlignment: MainAxisAlignment.end,
+        title: Text('ยืนยันการลบ',
             style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textNormal)),
         content: Text(
           plot!.measurementCount > 0
-              ? 'ลบ "${plot!.name}" และการวัดทั้งหมด ${plot!.measurementCount} จุด?'
-              : 'ลบ "${plot!.name}" (ไม่มีข้อมูลบันทึก)?',
+              ? 'คุณต้องการลบ "${plot!.name}" และข้อมูลการวัดทั้งหมด ${plot!.measurementCount} จุดใช่หรือไม่?'
+              : 'คุณต้องการลบ "${plot!.name}" ใช่หรือไม่?\n\n*แปลงนี้ไม่มีข้อมูลบันทึก',
           style: TextStyle(color: context.colors.textMuted),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx, false),
             child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted)),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<MeasurementsProvider>().remove(plot!.id);
-              context.read<PlotProvider>().loadAvailablePlots();
-              context.pop();
-            },
-            child: const Text('ลบ'),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('ลบ', style: TextStyle(color: Colors.red.shade500, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
+
+    if (confirm == true && mounted) {
+      context.read<MeasurementsProvider>().remove(plot!.id);
+      context.read<PlotProvider>().loadAvailablePlots();
+      context.pop();
+    }
   }
-}
-
-// ─── Measurement List ─────────────────────────────────────────────────────────
-
-class _MeasurementList extends StatelessWidget {
-  final List<MeasurementRecord> measurements;
-  const _MeasurementList({required this.measurements});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('จุดวัด (${measurements.length} จุด)',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.textNormal)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...measurements.asMap().entries.map((entry) {
-          final m = entry.value;
-          return Padding(
-            padding: EdgeInsets.only(bottom: entry.key < measurements.length - 1 ? 10 : 0),
-            child: _MeasurementCard(record: m),
-          );
-        }),
-      ],
-    );
-  }
-}
-
-class _MeasurementCard extends StatelessWidget {
-  final MeasurementRecord record;
-  const _MeasurementCard({required this.record});
-
-  @override
-  Widget build(BuildContext context) {
-    final date = record.measuredAt;
-    final dateStr = date != null
-        ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
-        : '-';
-
-    final metrics = [
-      ('pH', record.ph.toStringAsFixed(1), getSoilStatus('ph', record.ph)),
-      ('N', record.nitrogen.toStringAsFixed(0), getSoilStatus('nitrogen', record.nitrogen)),
-      ('P', record.phosphorus.toStringAsFixed(0), getSoilStatus('phosphorus', record.phosphorus)),
-      ('K', record.potassium.toStringAsFixed(0), getSoilStatus('potassium', record.potassium)),
-      ('ชื้น', '${record.moisture.toStringAsFixed(0)}%', getSoilStatus('moisture', record.moisture)),
-      ('EC', record.ec.toStringAsFixed(1), getSoilStatus('ec', record.ec)),
-    ];
+    if (_isLoadingPlants) {
+      return Scaffold(
+        backgroundColor: context.colors.scaffoldBg,
+        body: Center(child: CircularProgressIndicator(color: context.colors.primaryBtn)),
+      );
+    }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.colors.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                record.pointName ?? 'จุดที่ ${record.id?.substring(0, 6) ?? ""}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: context.colors.textNormal,
-                ),
-              ),
-              Text(dateStr,
-                  style: TextStyle(fontSize: 11, color: context.colors.textMuted)),
-            ],
+    if (plot == null || plot!.measurements.isEmpty) {
+      return Scaffold(
+        backgroundColor: context.colors.scaffoldBg,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new, size: 20, color: context.colors.textNormal),
+            onPressed: () => context.pop(),
           ),
-          if (record.lat != 0 || record.lng != 0) ...[
-            const SizedBox(height: 4),
-            Row(
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.location_on, size: 12, color: context.colors.textMuted),
-                const SizedBox(width: 4),
-                Text(
-                  '${record.lat.toStringAsFixed(6)}, ${record.lng.toStringAsFixed(6)}',
-                  style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: context.colors.borderColor.withValues(alpha: isDark ? 0.2 : 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.grass_outlined, size: 64, color: context.colors.textMuted),
+                ),
+                const SizedBox(height: 24),
+                Text('ไม่มีข้อมูลการวัดในแปลงนี้',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textNormal)),
+                const SizedBox(height: 8),
+                Text('กรุณาบันทึกค่าอย่างน้อย 1 จุดเพื่อดูผลวิเคราะห์ความเหมาะสมของสายพันธุ์',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: context.colors.textMuted, height: 1.5)),
+                const SizedBox(height: 32),
+                OutlinedButton.icon(
+                  onPressed: () => _confirmDelete(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.colors.errorText,
+                    side: BorderSide(color: context.colors.errorBorder),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                  label: const Text('ลบแปลงนี้', style: TextStyle(fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
-          ],
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: metrics.map((m) {
-              final (label, val, status) = m;
-              Color bg;
-              Color text;
-              switch (status) {
-                case SoilStatus.low:
-                  bg = isDark ? const Color(0xFF1e3a5f) : const Color(0xFFdbeafe);
-                  text = isDark ? const Color(0xFF93c5fd) : const Color(0xFF1d4ed8);
-                  break;
-                case SoilStatus.high:
-                  bg = isDark ? const Color(0xFF450a0a) : const Color(0xFFfee2e2);
-                  text = isDark ? const Color(0xFFfca5a5) : const Color(0xFFb91c1c);
-                  break;
-                case SoilStatus.normal:
-                  bg = isDark ? const Color(0xFF052e16) : const Color(0xFFdcfce7);
-                  text = isDark ? const Color(0xFF86efac) : const Color(0xFF15803d);
-                  break;
-              }
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+
+    final top3 = evaluateSuitability(plot!, _varieties);
+
+    return Scaffold(
+      backgroundColor: context.colors.scaffoldBg,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // ── App Bar ──
+          SliverAppBar(
+            backgroundColor: context.colors.scaffoldBg,
+            elevation: 0,
+            pinned: true,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new, size: 20, color: context.colors.textNormal),
+              onPressed: () => context.pop(),
+            ),
+            actions: [
+              IconButton(
+                onPressed: _confirmDelete,
+                icon: Icon(Icons.delete_outline_rounded, size: 22, color: context.colors.errorText),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                
+                // ── Hero Section ──
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: context.colors.cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.colors.borderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.colors.bgAlt,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'ผลวิเคราะห์แปลง',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textNormal,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        plot!.name,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textNormal,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.format_list_numbered_rounded, size: 14, color: context.colors.textMuted),
+                          const SizedBox(width: 6),
+                          Text(
+                            'จำนวน ${plot!.measurementCount} จุดวัด',
+                            style: TextStyle(fontSize: 14, color: context.colors.textMuted, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                const SizedBox(height: 24),
+
+                // ── Action Buttons Row ──
+                Row(
                   children: [
-                    Text('$label ', style: TextStyle(fontSize: 11, color: text.withValues(alpha: 0.7))),
-                    Text(val, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: text)),
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.history_rounded,
+                        title: 'ประวัติค่าดิน',
+                        subtitle: 'จัดการจุดวัด',
+                        color: context.colors.primaryBtn,
+                        onTap: () {
+                          context.push('/plot-measurements', extra: {'plot': plot}).then((_) {
+                            if (mounted) setState(() {});
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.eco_rounded,
+                        title: 'สายพันธุ์',
+                        subtitle: 'เปรียบเทียบทั้งหมด',
+                        color: context.colors.primaryBtn,
+                        onTap: () => _showAllSheet(context),
+                      ),
+                    ),
                   ],
                 ),
-              );
-            }).toList(),
+                
+                const SizedBox(height: 36),
+
+                // ── Section title ──
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text('3 อันดับแรก',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: context.colors.textNormal,
+                            letterSpacing: -0.5)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text('เหมาะสมกับดินของคุณที่สุด',
+                          style: TextStyle(fontSize: 13, color: context.colors.textMuted, fontWeight: FontWeight.w500)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // ── Top 3 Cassava cards ──
+                ...top3.asMap().entries.map((entry) {
+                  final rank = entry.key + 1;
+                  final s = entry.value;
+                  final variety = _varieties.firstWhere((v) => v.id == s.plantId);
+                  return _CassavaCard(
+                    suitability: s, 
+                    rank: rank, 
+                    variety: variety, 
+                    plot: plot!
+                  );
+                }),
+
+              ]),
+            ),
           ),
         ],
       ),
@@ -371,7 +299,56 @@ class _MeasurementCard extends StatelessWidget {
   }
 }
 
-// ─── Cassava Rank Card ────────────────────────────────────────────────────────
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.colors.cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.colors.borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textNormal),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 11, color: context.colors.textMuted, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _CassavaCard extends StatelessWidget {
   final PlantSuitability suitability;
@@ -388,17 +365,11 @@ class _CassavaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final Color scoreColor = suitability.scorePercent >= 80
-        ? Colors.green.shade600
-        : (suitability.scorePercent >= 50 ? Colors.orange.shade600 : Colors.red.shade600);
+        ? context.colors.primaryBtn
+        : (suitability.scorePercent >= 50 ? context.colors.warningOrange : context.colors.errorText);
 
-    final String rankEmoji = switch (rank) {
-      1 => '🥇',
-      2 => '🥈',
-      3 => '🥉',
-      _ => '#$rank',
-    };
+    final Color rankColor = switch (rank) { 1 => context.colors.primaryBtn, 2 => context.colors.warningOrange, _ => context.colors.textMuted };
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -406,154 +377,116 @@ class _CassavaCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.borderColor, width: 0.5),
+        border: Border.all(color: context.colors.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: scoreColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(rankEmoji, style: TextStyle(fontSize: rank <= 3 ? 18 : 14, fontWeight: FontWeight.w700, color: scoreColor)),
+                width: 24, height: 24,
+                decoration: BoxDecoration(color: rankColor.withValues(alpha: 0.12), shape: BoxShape.circle),
+                child: Center(child: Text('$rank', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: rankColor))),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  suitability.plantName,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textNormal),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(suitability.plantName,
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: context.colors.textNormal)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: scoreColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${suitability.scorePercent.toStringAsFixed(0)}%',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: scoreColor),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              Text(
+                '${suitability.scorePercent.toStringAsFixed(0)}%',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: scoreColor),
               ),
             ],
           ),
-
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 4),
-            child: Text(variety.description,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: context.colors.textMuted,
-                    height: 1.4)),
+          const SizedBox(height: 8),
+          Text(variety.description,
+              style: TextStyle(fontSize: 13, color: context.colors.textMuted, height: 1.5)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 6,
+            children: [
+              _TraitItem(icon: Icons.water_drop_outlined, label: 'ทนแล้ง', value: variety.droughtTolerance),
+              _TraitItem(icon: Icons.scale_rounded, label: 'ผลผลิต', value: variety.yieldPotential),
+              _TraitItem(icon: Icons.pie_chart_outline_rounded, label: 'แป้ง', value: variety.starchRange),
+            ],
           ),
-
-          // ── Variety info chips ──
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 8),
-            child: Text(
-              'ทนแล้ง: ${variety.droughtTolerance}  •  ผลผลิต: ${variety.yieldPotential}  •  แป้ง: ${variety.starchRange}',
-              style: TextStyle(fontSize: 11, color: context.colors.textMuted),
-            ),
-          ),
-
-          // ── Score bar ──
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 12),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: suitability.scorePercent / 100,
-                minHeight: 4,
-                backgroundColor: context.colors.borderColor,
-                valueColor: AlwaysStoppedAnimation(scoreColor),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'ปุ๋ยรองพื้น: ${variety.baseFertCode} (${variety.baseFertRate})',
+                  style: TextStyle(fontSize: 13, color: context.colors.textMuted),
+                ),
               ),
-            ),
-          ),
-
-          // ── Fertilizer hint ──
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 12),
-            child: Text(
-              'ปุ๋ยรองพื้น: ${variety.baseFertCode} (${variety.baseFertRate})',
-              style: TextStyle(fontSize: 12, color: context.colors.textNormal),
-            ),
-          ),
-
-          // ── Issues ──
-          if (suitability.recommendations.isNotEmpty &&
-              !suitability.recommendations.containsKey('general'))
-            Padding(
-              padding: const EdgeInsets.only(left: 30, top: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('ข้อควรระวัง',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: context.colors.textNormal)),
-                  const SizedBox(height: 4),
-                  ...suitability.recommendations.entries.map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text('• ${e.value}',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: context.colors.textMuted,
-                            height: 1.4)),
-                  )),
-                ],
-              ),
-            ),
-
-          // ── View Fertilizer Plan Button ──
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton(
+              FilledButton(
                 onPressed: () => context.push('/cassava-fertilizer', extra: {
                   'plot': plot,
                   'variety': variety,
                 }),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.colors.primaryBtn,
-                    side: BorderSide(color: context.colors.borderColor),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text(
-                    'ดูแผนปุ๋ย',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.colors.primaryBtn,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('ดูแผนปุ๋ย', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          if (suitability.recommendations.isNotEmpty &&
+              !suitability.recommendations.containsKey('general')) ...[
+            const SizedBox(height: 8),
+            Divider(height: 1, color: context.colors.dividerColor.withValues(alpha: 0.6)),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.warning_amber_rounded, size: 14, color: context.colors.warningOrange),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    suitability.recommendations.entries.map((e) => e.value).join('\n'),
+                    style: TextStyle(fontSize: 12, color: context.colors.warningText, height: 1.4),
                   ),
                 ),
-              ),
+              ],
             ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+
+
+class _TraitItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _TraitItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: context.colors.textMuted),
+        const SizedBox(width: 4),
+        Text('$label: ', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textNormal)),
+      ],
     );
   }
 }
@@ -642,15 +575,13 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.4,
       maxChildSize: 0.95,
       builder: (_, controller) => Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1f2937) : Colors.white,
+          color: context.colors.cardBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -661,7 +592,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
               child: Container(
                 width: 40, height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
+                  color: context.colors.textMuted.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -710,7 +641,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                   hintStyle: TextStyle(color: context.colors.textMuted),
                   prefixIcon: Icon(Icons.search, color: context.colors.textMuted, size: 20),
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                  fillColor: context.colors.bgAlt,
                   contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -765,10 +696,10 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                               final rank = _all!.indexOf(s) + 1;
                   final variety = widget.varieties.firstWhere((v) => v.id == s.plantId);
                   final scoreColor = s.scorePercent >= 80
-                      ? Colors.green.shade600
+                      ? context.colors.primaryBtn
                       : s.scorePercent >= 50
-                          ? Colors.orange.shade600
-                          : Colors.red.shade600;
+                          ? context.colors.warningOrange
+                          : context.colors.errorText;
 
                   final String rankEmoji = switch (rank) {
                     1 => '🥇',
@@ -800,7 +731,7 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: scoreColor.withValues(alpha: 0.1),
+                              color: context.colors.bgAlt,
                               shape: BoxShape.circle,
                             ),
                             child: Center(

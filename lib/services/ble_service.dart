@@ -21,6 +21,8 @@ class BleService extends ChangeNotifier {
   bool _isScanning = false;
   bool _isDemoMode = false;
   SensorData? _sensorData;
+  double? _sensorLat;
+  double? _sensorLng;
   DateTime? _lastUpdate;
   String? _error;
   String? _rawData; // 🌟 เก็บข้อมูลดิบไปโชว์ในหน้าจอ 🌟
@@ -31,6 +33,8 @@ class BleService extends ChangeNotifier {
   bool get isConnected => _connectedDevice != null || _isDemoMode;
   BluetoothDevice? get connectedDevice => _connectedDevice;
   SensorData? get sensorData => _sensorData;
+  double? get sensorLat => _sensorLat;
+  double? get sensorLng => _sensorLng;
   DateTime? get lastUpdate => _lastUpdate;
   String? get error => _error;
   String? get rawData => _rawData; // 🌟 Getter 🌟
@@ -139,6 +143,13 @@ class BleService extends ChangeNotifier {
     }
   }
 
+  double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   void _parseSensorData(List<int> value) {
     try {
       String decoded = utf8.decode(value).trim();
@@ -151,16 +162,19 @@ class BleService extends ChangeNotifier {
 
       final raw = jsonDecode(decoded) as Map<String, dynamic>;
       
+      final ecVal = _parseDouble(raw['ec']) ?? 0.0;
       _sensorData = SensorData(
-        ph: (raw['ph'] as num?)?.toDouble() ?? 0.0,
-        nitrogen: (raw['n'] as num?)?.toDouble() ?? 0.0,
-        phosphorus: (raw['p'] as num?)?.toDouble() ?? 0.0,
-        potassium: (raw['k'] as num?)?.toDouble() ?? 0.0,
-        moisture: (raw['moisture'] as num?)?.toDouble() ?? 0.0,
-        temperature: (raw['temp'] as num?)?.toDouble() ?? 0.0,
-        ec: (raw['ec'] as num?)?.toDouble() ?? 0.0,
-        salinity: calculateSalinity((raw['ec'] as num?)?.toDouble() ?? 0.0),
+        ph: _parseDouble(raw['ph']) ?? 0.0,
+        nitrogen: _parseDouble(raw['n']) ?? 0.0,
+        phosphorus: _parseDouble(raw['p']) ?? 0.0,
+        potassium: _parseDouble(raw['k']) ?? 0.0,
+        moisture: _parseDouble(raw['moisture']) ?? 0.0,
+        temperature: _parseDouble(raw['temp']) ?? 0.0,
+        ec: ecVal,
+        salinity: calculateSalinity(ecVal),
       );
+      _sensorLat = _parseDouble(raw['lat']) ?? _parseDouble(raw['latitude']);
+      _sensorLng = _parseDouble(raw['lng']) ?? _parseDouble(raw['lon']) ?? _parseDouble(raw['longitude']);
       _lastUpdate = DateTime.now();
       notifyListeners();
     } catch (e) {

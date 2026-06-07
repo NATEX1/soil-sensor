@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +14,8 @@ class SaveModal extends StatefulWidget {
   final String? groupId;
   final String? initialPointName;
   final SampleMethod? initialSampleMethod;
+  final double? sensorLat;
+  final double? sensorLng;
 
   const SaveModal(
       {super.key,
@@ -23,7 +24,9 @@ class SaveModal extends StatefulWidget {
       required this.onSaved,
       this.groupId,
       this.initialPointName,
-      this.initialSampleMethod});
+      this.initialSampleMethod,
+      this.sensorLat,
+      this.sensorLng});
 
   @override
   State<SaveModal> createState() => _SaveModalState();
@@ -37,7 +40,7 @@ class _SaveModalState extends State<SaveModal> {
   double? _lng;
   bool _saving = false;
   bool _locating = false;
-  final bool _sensorLocating = false;
+  bool _useSensorGps = false;
   String? _error;
 
   // Plot selection
@@ -137,13 +140,20 @@ class _SaveModalState extends State<SaveModal> {
       _error = null;
     });
     try {
+      final useSensor = _useSensorGps &&
+          widget.sensorLat != null &&
+          widget.sensorLng != null &&
+          widget.sensorLat != 0.0;
+
       await ApiService.saveMeasurement(
         sampleMethod: _sampleMethod,
-        pointName: _pointNameController.text.isEmpty ? null : _pointNameController.text,
+        pointName: _pointNameController.text.isEmpty
+            ? null
+            : _pointNameController.text,
         groupId: _selectedPlot!.id,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
-        lat: _lat ?? 0,
-        lng: _lng ?? 0,
+        lat: useSensor ? widget.sensorLat! : (_lat ?? 0),
+        lng: useSensor ? widget.sensorLng! : (_lng ?? 0),
         ph: dataToSave.ph,
         nitrogen: dataToSave.nitrogen,
         phosphorus: dataToSave.phosphorus,
@@ -163,50 +173,6 @@ class _SaveModalState extends State<SaveModal> {
     } finally {
       setState(() => _saving = false);
     }
-  }
-
-  Future<void> _saveWithSensorOffset() async {
-    if (widget.sensorData == null) return;
-    if (_selectedPlot == null) {
-      setState(() => _error = 'กรุณาเลือกแปลงก่อนบันทึก');
-      return;
-    }
-    if (_pointNameController.text.trim().isEmpty) {
-      setState(() => _error = 'กรุณาระบุชื่อจุดเก็บตัวอย่าง');
-      return;
-    }
-
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-
-    final rng = Random();
-
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (serviceEnabled) {
-        LocationPermission permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-        if (permission != LocationPermission.denied && permission != LocationPermission.deniedForever) {
-          final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-          final offsetMetres = 20.0 + rng.nextDouble() * 80.0; // 20–100 m
-          final bearing = rng.nextDouble() * 2 * pi;
-          final dLat = (offsetMetres * cos(bearing)) / 111000.0;
-          final dLng = (offsetMetres * sin(bearing)) / (111000.0 * cos(pos.latitude * pi / 180.0));
-
-          _lat = pos.latitude + dLat;
-          _lng = pos.longitude + dLng;
-        }
-      }
-    } catch (_) {
-      // Ignore location error, just proceed to save
-    }
-
-    // Call the regular save without fluctuating sensor data
-    await _save(overrideData: widget.sensorData);
   }
 
   @override
@@ -273,11 +239,14 @@ class _SaveModalState extends State<SaveModal> {
                           borderRadius: BorderRadius.circular(12)),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, size: 16, color: context.colors.errorText),
+                          Icon(Icons.error_outline,
+                              size: 16, color: context.colors.errorText),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(_error!,
-                                style: TextStyle(color: context.colors.errorText, fontSize: 13)),
+                                style: TextStyle(
+                                    color: context.colors.errorText,
+                                    fontSize: 13)),
                           ),
                         ],
                       ),
@@ -288,7 +257,8 @@ class _SaveModalState extends State<SaveModal> {
                   // ═══════════════════════════════════════════
                   Row(
                     children: [
-                      Icon(Icons.landscape, size: 16, color: context.colors.primaryBtn),
+                      Icon(Icons.landscape,
+                          size: 16, color: context.colors.primaryBtn),
                       const SizedBox(width: 6),
                       Text('เลือกแปลง',
                           style: TextStyle(
@@ -298,9 +268,11 @@ class _SaveModalState extends State<SaveModal> {
                       const Spacer(),
                       if (_selectedPlot != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: context.colors.primaryBtn.withValues(alpha: 0.12),
+                            color: context.colors.primaryBtn
+                                .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text('เลือกแล้ว ✓',
@@ -320,7 +292,8 @@ class _SaveModalState extends State<SaveModal> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
-                        itemCount: plots.length + 1, // +1 for "create new" button
+                        itemCount:
+                            plots.length + 1, // +1 for "create new" button
                         separatorBuilder: (_, __) => const SizedBox(width: 10),
                         itemBuilder: (context, index) {
                           // Last item is the "create new" button
@@ -350,10 +323,13 @@ class _SaveModalState extends State<SaveModal> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: _pointNameController,
-                    style: TextStyle(fontSize: 14, color: context.colors.textNormal),
+                    style: TextStyle(
+                        fontSize: 14, color: context.colors.textNormal),
                     decoration: InputDecoration(
                       hintText: 'เช่น จุดทดสอบที่ 1',
-                      hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+                      hintStyle: TextStyle(
+                          color:
+                              context.colors.textMuted.withValues(alpha: 0.5)),
                       filled: true,
                       fillColor: context.colors.cardBg,
                       border: OutlineInputBorder(
@@ -361,11 +337,16 @@ class _SaveModalState extends State<SaveModal> {
                           borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                          borderSide: BorderSide(
+                              color: context.colors.borderColor
+                                  .withValues(alpha: 0.5))),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.5))),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          borderSide: BorderSide(
+                              color: context.colors.primaryBtn
+                                  .withValues(alpha: 0.5))),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
                   ),
 
@@ -384,23 +365,30 @@ class _SaveModalState extends State<SaveModal> {
                     decoration: BoxDecoration(
                       color: context.colors.cardBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: context.colors.borderColor
+                              .withValues(alpha: 0.5)),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: RadioGroup<SampleMethod>(
                       groupValue: _sampleMethod,
                       onChanged: (v) => setState(() => _sampleMethod = v!),
                       child: Column(
-                        children: SampleMethod.values.map((sm) =>
-                          RadioListTile<SampleMethod>(
-                            value: sm,
-                            title: Text(sampleMethodLabels[sm]!,
-                                style: TextStyle(fontSize: 14, color: context.colors.textNormal)),
-                            activeColor: context.colors.primaryBtn,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                            dense: true,
-                          ),
-                        ).toList(),
+                        children: SampleMethod.values
+                            .map(
+                              (sm) => RadioListTile<SampleMethod>(
+                                value: sm,
+                                title: Text(sampleMethodLabels[sm]!,
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.colors.textNormal)),
+                                activeColor: context.colors.primaryBtn,
+                                contentPadding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                dense: true,
+                              ),
+                            )
+                            .toList(),
                       ),
                     ),
                   ),
@@ -419,10 +407,13 @@ class _SaveModalState extends State<SaveModal> {
                   TextField(
                     controller: _notesController,
                     maxLines: 3,
-                    style: TextStyle(fontSize: 14, color: context.colors.textNormal),
+                    style: TextStyle(
+                        fontSize: 14, color: context.colors.textNormal),
                     decoration: InputDecoration(
                       hintText: 'บันทึกเพิ่มเติม...',
-                      hintStyle: TextStyle(color: context.colors.textMuted.withValues(alpha: 0.5)),
+                      hintStyle: TextStyle(
+                          color:
+                              context.colors.textMuted.withValues(alpha: 0.5)),
                       filled: true,
                       fillColor: context.colors.cardBg,
                       border: OutlineInputBorder(
@@ -430,10 +421,14 @@ class _SaveModalState extends State<SaveModal> {
                           borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                          borderSide: BorderSide(
+                              color: context.colors.borderColor
+                                  .withValues(alpha: 0.5))),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: context.colors.primaryBtn.withValues(alpha: 0.5))),
+                          borderSide: BorderSide(
+                              color: context.colors.primaryBtn
+                                  .withValues(alpha: 0.5))),
                       contentPadding: const EdgeInsets.all(16),
                     ),
                   ),
@@ -441,31 +436,125 @@ class _SaveModalState extends State<SaveModal> {
                   const SizedBox(height: 20),
 
                   // ═══════════════════════════════════════════
-                  // LOCATION
+                  // LOCATION — GPS source selector
                   // ═══════════════════════════════════════════
+                  Text('ตำแหน่งพิกัด (GPS)',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textNormal)),
+                  const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                        color: context.colors.cardBg,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5))),
-                    child: Row(
+                      color: context.colors.cardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: context.colors.borderColor
+                              .withValues(alpha: 0.5)),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
                       children: [
-                        Icon(Icons.location_on_outlined, size: 18, color: context.colors.textMuted),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _locating
-                              ? Text('กำลังระบุตำแหน่ง...',
-                                  style:
-                                      TextStyle(fontSize: 13, color: context.colors.textMuted))
-                              : Text(
-                                  _lat != null
-                                      ? '${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}'
-                                      : 'ไม่สามารถระบุตำแหน่งได้',
-                                  style:
-                                      TextStyle(fontSize: 13, color: context.colors.textNormal),
-                                ),
+                        RadioListTile<bool>(
+                          value: false,
+                          groupValue: _useSensorGps,
+                          onChanged: (v) => setState(() => _useSensorGps = v!),
+                          activeColor: context.colors.primaryBtn,
+                          title: Row(
+                            children: [
+                              Icon(Icons.smartphone,
+                                  size: 18,
+                                  color: !_useSensorGps
+                                      ? context.colors.primaryBtn
+                                      : context.colors.textMuted),
+                              const SizedBox(width: 8),
+                              Text('พิกัดจากมือถือ',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: context.colors.textNormal)),
+                            ],
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(left: 26, top: 4),
+                            child: _locating
+                                ? Text('กำลังระบุตำแหน่ง...',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: context.colors.textMuted))
+                                : Text(
+                                    _lat != null
+                                        ? '${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}'
+                                        : 'ไม่สามารถระบุตำแหน่งได้',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: !_useSensorGps
+                                            ? context.colors.primaryBtn
+                                            : context.colors.textMuted),
+                                  ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                         ),
+                        Divider(
+                            height: 1,
+                            color: context.colors.borderColor
+                                .withValues(alpha: 0.5)),
+                        if (widget.sensorLat != null &&
+                            widget.sensorLng != null &&
+                            widget.sensorLat != 0.0)
+                          RadioListTile<bool>(
+                            value: true,
+                            groupValue: _useSensorGps,
+                            onChanged: (v) =>
+                                setState(() => _useSensorGps = v!),
+                            activeColor: context.colors.primaryBtn,
+                            title: Row(
+                              children: [
+                                Icon(Icons.sensors,
+                                    size: 18,
+                                    color: _useSensorGps
+                                        ? context.colors.primaryBtn
+                                        : context.colors.textMuted),
+                                const SizedBox(width: 8),
+                                Text('พิกัดจากเซ็นเซอร์ (Device)',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.colors.textNormal)),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(left: 26, top: 4),
+                              child: Text(
+                                '${widget.sensorLat!.toStringAsFixed(5)}, ${widget.sensorLng!.toStringAsFixed(5)}',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: _useSensorGps
+                                        ? context.colors.primaryBtn
+                                        : context.colors.textMuted),
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
+                            child: Row(
+                              children: [
+                                Icon(Icons.sensors_off,
+                                    size: 18,
+                                    color: context.colors.textMuted
+                                        .withValues(alpha: 0.5)),
+                                const SizedBox(width: 8),
+                                Text('ไม่พบพิกัด GPS จากเซ็นเซอร์',
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: context.colors.textMuted
+                                            .withValues(alpha: 0.8))),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -482,20 +571,24 @@ class _SaveModalState extends State<SaveModal> {
                           onPressed: widget.onClose,
                           style: OutlinedButton.styleFrom(
                               foregroundColor: context.colors.textNormal,
-                              side: BorderSide(color: context.colors.borderColor),
+                              side:
+                                  BorderSide(color: context.colors.borderColor),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14))),
-                          child: const Text('ยกเลิก', style: TextStyle(fontWeight: FontWeight.w600)),
+                          child: const Text('ยกเลิก',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: (_saving || _selectedPlot == null) ? null : _save,
+                          onPressed:
+                              (_saving || _selectedPlot == null) ? null : _save,
                           style: FilledButton.styleFrom(
                             backgroundColor: context.colors.primaryBtn,
-                            disabledBackgroundColor: context.colors.textMuted.withValues(alpha: 0.15),
+                            disabledBackgroundColor: context.colors.textMuted
+                                .withValues(alpha: 0.15),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),
@@ -513,29 +606,6 @@ class _SaveModalState extends State<SaveModal> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: (_saving || _locating || _sensorLocating || _selectedPlot == null) ? null : _saveWithSensorOffset,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: context.colors.primaryBtn,
-                        disabledBackgroundColor: context.colors.textMuted.withValues(alpha: 0.15),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.sensors, size: 18),
-                      label: const Text('บันทึกพิกัดจาก Sensor',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -548,7 +618,8 @@ class _SaveModalState extends State<SaveModal> {
   // ─── Plot Card ──────────────────────────────────────────────────────
 
   Widget _buildPlotCard(PlotRecord plot, bool isSelected) {
-    final dateStr = '${plot.createdAt.day.toString().padLeft(2, '0')}/${plot.createdAt.month.toString().padLeft(2, '0')}/${plot.createdAt.year}';
+    final dateStr =
+        '${plot.createdAt.day.toString().padLeft(2, '0')}/${plot.createdAt.month.toString().padLeft(2, '0')}/${plot.createdAt.year}';
     return GestureDetector(
       onTap: () => setState(() {
         _selectedPlot = plot;
@@ -578,7 +649,9 @@ class _SaveModalState extends State<SaveModal> {
                 Icon(
                   isSelected ? Icons.check_circle : Icons.landscape,
                   size: 16,
-                  color: isSelected ? context.colors.primaryBtn : context.colors.textMuted,
+                  color: isSelected
+                      ? context.colors.primaryBtn
+                      : context.colors.textMuted,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -587,7 +660,9 @@ class _SaveModalState extends State<SaveModal> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: isSelected ? context.colors.primaryBtn : context.colors.textNormal,
+                      color: isSelected
+                          ? context.colors.primaryBtn
+                          : context.colors.textNormal,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -599,11 +674,13 @@ class _SaveModalState extends State<SaveModal> {
               children: [
                 Text(
                   dateStr,
-                  style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                  style:
+                      TextStyle(fontSize: 10, color: context.colors.textMuted),
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
                     color: context.colors.primaryBtn.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -643,7 +720,8 @@ class _SaveModalState extends State<SaveModal> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline, size: 24, color: context.colors.primaryBtn),
+            Icon(Icons.add_circle_outline,
+                size: 24, color: context.colors.primaryBtn),
             const SizedBox(height: 6),
             Text('สร้างแปลงใหม่',
                 style: TextStyle(
@@ -667,11 +745,13 @@ class _SaveModalState extends State<SaveModal> {
         decoration: BoxDecoration(
           color: context.colors.primaryBtn.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.colors.primaryBtn.withValues(alpha: 0.2)),
+          border: Border.all(
+              color: context.colors.primaryBtn.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
-            Icon(Icons.add_location_alt_outlined, size: 36, color: context.colors.primaryBtn),
+            Icon(Icons.add_location_alt_outlined,
+                size: 36, color: context.colors.primaryBtn),
             const SizedBox(height: 8),
             Text('ยังไม่มีแปลง',
                 style: TextStyle(
@@ -680,11 +760,11 @@ class _SaveModalState extends State<SaveModal> {
                     color: context.colors.textNormal)),
             const SizedBox(height: 4),
             Text('กดเพื่อสร้างแปลงแรกของคุณ',
-                style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+                style:
+                    TextStyle(fontSize: 12, color: context.colors.textMuted)),
           ],
         ),
       ),
     );
   }
-
 }

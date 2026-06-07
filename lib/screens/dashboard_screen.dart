@@ -52,10 +52,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   SensorData _getActiveData(BleService ble, WiFiService wifi, PlotProvider plot) {
-    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
-    if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.sensorData != null) return ble.sensorData!;
-    if (ble.isConnected && ble.sensorData != null) return ble.sensorData!;
-    if (wifi.isConnected && wifi.sensorData != null) return wifi.sensorData!;
+    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected) return wifi.sensorData ?? const _DefaultSensorData();
+    if (_connectionMode == ConnectionMode.ble && ble.isConnected) return ble.sensorData ?? const _DefaultSensorData();
+    if (ble.isConnected) return ble.sensorData ?? const _DefaultSensorData();
+    if (wifi.isConnected) return wifi.sensorData ?? const _DefaultSensorData();
     
     // Show plot average if no live connection
     if (plot.currentPlot != null && plot.currentPlot!.measurements.isNotEmpty) {
@@ -65,11 +65,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return const _DefaultSensorData();
   }
 
+  double? _getActiveSensorLat(BleService ble, WiFiService wifi) {
+    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected) return wifi.sensorLat;
+    if (_connectionMode == ConnectionMode.ble && ble.isConnected) return ble.sensorLat;
+    if (ble.isConnected) return ble.sensorLat;
+    if (wifi.isConnected) return wifi.sensorLat;
+    return null;
+  }
+
+  double? _getActiveSensorLng(BleService ble, WiFiService wifi) {
+    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected) return wifi.sensorLng;
+    if (_connectionMode == ConnectionMode.ble && ble.isConnected) return ble.sensorLng;
+    if (ble.isConnected) return ble.sensorLng;
+    if (wifi.isConnected) return wifi.sensorLng;
+    return null;
+  }
+
   DateTime? _getActiveLastUpdate(BleService ble, WiFiService wifi, PlotProvider plot) {
-    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
-    if (_connectionMode == ConnectionMode.ble && ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
-    if (ble.isConnected && ble.lastUpdate != null) return ble.lastUpdate;
-    if (wifi.isConnected && wifi.lastUpdate != null) return wifi.lastUpdate;
+    if (_connectionMode == ConnectionMode.wifi && wifi.isConnected) return wifi.lastUpdate;
+    if (_connectionMode == ConnectionMode.ble && ble.isConnected) return ble.lastUpdate;
+    if (ble.isConnected) return ble.lastUpdate;
+    if (wifi.isConnected) return wifi.lastUpdate;
     
     if (plot.currentPlot != null && plot.currentPlot!.measurements.isNotEmpty) {
        return plot.currentPlot!.measurements.first.measuredAt;
@@ -485,6 +501,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       backgroundColor: Colors.transparent,
                       builder: (_) => SaveModal(
                         sensorData: activeData,
+                        sensorLat: _getActiveSensorLat(ble, wifi),
+                        sensorLng: _getActiveSensorLng(ble, wifi),
                         onClose: () => Navigator.of(context).pop(),
                         onSaved: () async {
                           Navigator.of(context).pop();

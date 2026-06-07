@@ -195,15 +195,9 @@ class SettingsScreen extends StatelessWidget {
         content: Text('คุณแน่ใจหรือไม่ว่าต้องการตัดการเชื่อมต่อจากอุปกรณ์นี้?', style: TextStyle(color: context.colors.textMuted)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('ยกเลิก', style: TextStyle(color: context.colors.textMuted))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
+          TextButton(
             onPressed: () async { Navigator.pop(ctx); await onConfirm(); },
-            child: const Text('ยืนยัน'),
+            child: Text('ยืนยัน', style: TextStyle(color: Colors.red.shade500, fontWeight: FontWeight.w600)),
           ),
         ],
       ),

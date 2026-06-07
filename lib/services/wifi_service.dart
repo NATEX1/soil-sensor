@@ -16,6 +16,8 @@ class WiFiService extends ChangeNotifier {
   bool _isConnected = false;
   bool _isScanning = false;
   SensorData? _sensorData;
+  double? _sensorLat;
+  double? _sensorLng;
   DateTime? _lastUpdate;
   String? _error;
   Timer? _pollingTimer;
@@ -25,6 +27,8 @@ class WiFiService extends ChangeNotifier {
   bool get isConnected => _isConnected;
   bool get isScanning => _isScanning;
   SensorData? get sensorData => _sensorData;
+  double? get sensorLat => _sensorLat;
+  double? get sensorLng => _sensorLng;
   DateTime? get lastUpdate => _lastUpdate;
   String? get error => _error;
 
@@ -196,22 +200,31 @@ class WiFiService extends ChangeNotifier {
     notifyListeners();
   }
 
+  double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   /// Parse sensor data from JSON
   void _parseSensorData(String jsonString) {
     try {
       final raw = jsonDecode(jsonString) as Map<String, dynamic>;
-      final ec = (raw['ec'] as num?)?.toDouble() ?? 0;
+      final ec = _parseDouble(raw['ec']) ?? 0.0;
       
       _sensorData = SensorData(
-        ph: (raw['ph'] as num?)?.toDouble() ?? 0,
-        nitrogen: (raw['n'] as num?)?.toDouble() ?? 0,
-        phosphorus: (raw['p'] as num?)?.toDouble() ?? 0,
-        potassium: (raw['k'] as num?)?.toDouble() ?? 0,
-        moisture: (raw['moisture'] as num?)?.toDouble() ?? 0,
-        temperature: (raw['temp'] as num?)?.toDouble() ?? 0,
+        ph: _parseDouble(raw['ph']) ?? 0.0,
+        nitrogen: _parseDouble(raw['n']) ?? 0.0,
+        phosphorus: _parseDouble(raw['p']) ?? 0.0,
+        potassium: _parseDouble(raw['k']) ?? 0.0,
+        moisture: _parseDouble(raw['moisture']) ?? 0.0,
+        temperature: _parseDouble(raw['temp']) ?? 0.0,
         ec: ec,
         salinity: calculateSalinity(ec),
       );
+      _sensorLat = _parseDouble(raw['lat']) ?? _parseDouble(raw['latitude']);
+      _sensorLng = _parseDouble(raw['lng']) ?? _parseDouble(raw['lon']) ?? _parseDouble(raw['longitude']);
       _lastUpdate = DateTime.now();
       _error = null;
     } catch (e) {

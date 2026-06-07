@@ -18,6 +18,7 @@ import 'screens/settings/plants_management_screen.dart';
 import 'models/sensor_data.dart';
 import 'models/calculations.dart';
 import 'screens/cassava_fertilizer_screen.dart';
+import 'screens/plot_measurements_screen.dart';
 import 'screens/splash_screen.dart';
 
 Future<void> main() async {
@@ -102,6 +103,18 @@ final _router = GoRouter(
           CassavaFertilizerScreen(
             plot: args['plot'] as PlotRecord,
             variety: args['variety'] as CassavaVariety,
+          ),
+          state,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/plot-measurements',
+      pageBuilder: (_, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return _slidePage(
+          PlotMeasurementsScreen(
+            plot: args['plot'] as PlotRecord,
           ),
           state,
         );
