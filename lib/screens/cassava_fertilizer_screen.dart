@@ -7,16 +7,31 @@ import '../theme/app_colors.dart';
 class CassavaFertilizerScreen extends StatelessWidget {
   final PlotRecord plot;
   final CassavaVariety variety;
+  final PlantSuitability? suitability;
+  final Map<String, dynamic>? predictedFertilizer;
+  final Map<String, dynamic>? regression;
 
   const CassavaFertilizerScreen({
     super.key,
     required this.plot,
     required this.variety,
+    this.suitability,
+    this.predictedFertilizer,
+    this.regression,
   });
 
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+
+    Color? scoreColor;
+    if (suitability != null) {
+      scoreColor = suitability!.scorePercent >= 80
+          ? context.colors.primaryBtn
+          : (suitability!.scorePercent >= 50
+              ? context.colors.warningOrange
+              : context.colors.errorText);
+    }
 
     return Scaffold(
       body: ListView(
@@ -50,6 +65,35 @@ class CassavaFertilizerScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              if (suitability != null && scoreColor != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: scoreColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'ความเหมาะสม',
+                        style: TextStyle(
+                          fontSize: 10, 
+                          color: scoreColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${suitability!.scorePercent.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.w800, 
+                          color: scoreColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 20),
@@ -75,10 +119,24 @@ class CassavaFertilizerScreen extends StatelessWidget {
           _SoilRequirementCard(plot: plot, variety: variety),
           const SizedBox(height: 20),
 
+          // ── ML Prediction Results ──
+          if (regression != null) ...[
+            _SectionTitle(context: context, title: 'ผลผลิตที่คาดการณ์ (ML Model)'),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _chip(context, Icons.scale, 'ผลผลิต: ${regression!['yield_kg_rai']} กก./ไร่', Colors.green.shade600)),
+                const SizedBox(width: 8),
+                Expanded(child: _chip(context, Icons.pie_chart, 'แป้ง: ${regression!['starch_pct']}%', Colors.orange.shade600)),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+
           // ── Fertilizer plan ──
-          _SectionTitle(context: context, title: 'แผนการใส่ปุ๋ยตามช่วงเวลา'),
+          _SectionTitle(context: context, title: predictedFertilizer != null ? 'แผนการใส่ปุ๋ย (ML Model)' : 'แผนการใส่ปุ๋ยตามช่วงเวลา'),
           const SizedBox(height: 10),
-          _FertPlanTimeline(plot: plot, variety: variety),
+          _FertPlanTimeline(plot: plot, variety: variety, predictedFertilizer: predictedFertilizer),
           const SizedBox(height: 20),
 
           // ── Notes ──
@@ -282,10 +340,34 @@ class _ReqRow {
 class _FertPlanTimeline extends StatelessWidget {
   final PlotRecord plot;
   final CassavaVariety variety;
-  const _FertPlanTimeline({required this.plot, required this.variety});
+  final Map<String, dynamic>? predictedFertilizer;
+  const _FertPlanTimeline({required this.plot, required this.variety, this.predictedFertilizer});
 
   @override
   Widget build(BuildContext context) {
+    if (predictedFertilizer != null) {
+      final steps = <_FertStep>[
+        _FertStep(
+          icon: '✨',
+          title: 'คำแนะนำปุ๋ยเฉพาะเจาะจงสำหรับแปลงนี้',
+          color: Colors.blue.shade600,
+          items: [
+            _FertItem(
+              code: 'ปุ๋ยสูตร ${predictedFertilizer!['formula']}',
+              purpose: predictedFertilizer!['note'] == '-' ? 'ตามอัตราแนะนำ' : predictedFertilizer!['note'],
+              rate: '${predictedFertilizer!['rate_kg_rai']} กก./ไร่ (${predictedFertilizer!['timing']})',
+            ),
+          ],
+        ),
+      ];
+      return Column(
+        children: steps.asMap().entries.map((e) {
+          final isLast = e.key == steps.length - 1;
+          return _TimelineStepCard(step: e.value, isLast: isLast);
+        }).toList(),
+      );
+    }
+
     final needsPh = plot.ph < variety.minPh || plot.ph > variety.maxPh;
     final needsN = plot.nitrogen < variety.minN;
     final needsP = plot.phosphorus < variety.minP;

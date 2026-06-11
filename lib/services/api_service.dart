@@ -18,9 +18,9 @@ class ApiService {
 
   static Future<MeasurementRecord> saveMeasurement({
     required SampleMethod sampleMethod,
-    String? notes,
     String? pointName,
-    String? groupId,
+    required String plotId,
+    String? notes,
     required double lat,
     required double lng,
     required double ph,
@@ -31,12 +31,14 @@ class ApiService {
     required double temperature,
     required double ec,
     required double salinity,
+    String? soilType,
+    double? harvestAge,
   }) async {
     final body = {
-      'plot_id': groupId,
       'sample_method': sampleMethodValues[sampleMethod],
-      'notes': notes,
-      'point_name': pointName,
+      if (pointName != null) 'point_name': pointName,
+      'plot_id': plotId,
+      if (notes != null) 'notes': notes,
       'lat': lat,
       'lng': lng,
       'ph': ph,
@@ -47,6 +49,8 @@ class ApiService {
       'temperature': temperature,
       'ec': ec,
       'salinity': salinity,
+      if (soilType != null) 'soil_type': soilType,
+      if (harvestAge != null) 'harvest_age': harvestAge,
     };
 
     final res = await http.post(
@@ -74,9 +78,9 @@ class ApiService {
     }
   }
 
-  static Future<List<MeasurementRecord>> getMeasurementsByGroupId(String groupId) async {
+  static Future<List<MeasurementRecord>> getMeasurementsByPlotId(String plotId) async {
     final uri = Uri.parse('$_baseUrl/measurements').replace(queryParameters: {
-      'plot_id': groupId,
+      'plot_id': plotId,
     });
     
     final res = await http.get(uri, headers: _headers);
@@ -227,6 +231,40 @@ class ApiService {
 
     if (res.statusCode >= 400) {
       _handleError(res, 'ลบข้อมูลพืชไม่สำเร็จ');
+    }
+  }
+
+  // ─── Predictions ───────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> predictSuitability({
+    required double ph,
+    required double phosphorus,
+    required double potassium,
+    required double temperature,
+    required double ec,
+    String? soilType,
+    double? harvestAge,
+  }) async {
+    final body = {
+      'pH': ph,
+      'P': phosphorus,
+      'K': potassium,
+      'temperature_c': temperature,
+      'EC': ec,
+      if (soilType != null) 'soil_type': soilType,
+      if (harvestAge != null) 'harvest_age': harvestAge,
+    };
+
+    final res = await http.post(
+      Uri.parse('$_baseUrl/predict'),
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } else {
+      _handleError(res, 'พยากรณ์ผลลัพธ์ไม่สำเร็จ');
     }
   }
 

@@ -20,21 +20,47 @@ class RecommendScreen extends StatefulWidget {
 class _RecommendScreenState extends State<RecommendScreen> {
   PlotRecord? get plot => widget.plot;
   List<CassavaVariety> _varieties = [];
-  bool _isLoadingPlants = true;
+  Map<String, dynamic>? _predictionResult;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPlants();
+    _loadData();
   }
 
-  Future<void> _loadPlants() async {
-    final plants = await ApiService.getPlants();
-    if (mounted) {
-      setState(() {
-        _varieties = plants.map((p) => CassavaVariety.fromJson(p)).toList();
-        _isLoadingPlants = false;
-      });
+  Future<void> _loadData() async {
+    try {
+      final plants = await ApiService.getPlants();
+      
+      Map<String, dynamic>? pred;
+      if (plot != null && plot!.measurements.isNotEmpty) {
+        final latest = plot!.measurements.last;
+        pred = await ApiService.predictSuitability(
+          ph: plot!.ph,
+          phosphorus: plot!.phosphorus,
+          potassium: plot!.potassium,
+          temperature: plot!.temperature,
+          ec: plot!.ec,
+          soilType: latest.soilType,
+          harvestAge: latest.harvestAge,
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _varieties = plants.map((p) => CassavaVariety.fromJson(p)).toList();
+          _predictionResult = pred;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -43,7 +69,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AllVarietiesSheet(plot: plot!, varieties: _varieties),
+      builder: (_) => _AllVarietiesSheet(plot: plot!, varieties: _varieties, predictionResult: _predictionResult!),
     );
   }
 
@@ -84,7 +110,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingPlants) {
+    if (_isLoading) {
       return Scaffold(
         backgroundColor: context.colors.scaffoldBg,
         body: Center(child: CircularProgressIndicator(color: context.colors.primaryBtn)),
@@ -144,7 +170,23 @@ class _RecommendScreenState extends State<RecommendScreen> {
       );
     }
 
-    final top3 = evaluateSuitability(plot!, _varieties);
+    List<PlantSuitability> top3 = [];
+    if (_predictionResult != null) {
+      final allProba = _predictionResult!['all_proba'] as Map<String, dynamic>;
+      final sortedProba = allProba.entries.toList()..sort((a, b) => (b.value as num).compareTo(a.value as num));
+      
+      for (final entry in sortedProba.take(3)) {
+        final plantName = entry.key;
+        final score = (entry.value as num).toDouble() * 100;
+        final variety = _varieties.firstWhere((v) => v.name == plantName, orElse: () => _varieties.first);
+        top3.add(PlantSuitability(
+          plantId: variety.id,
+          plantName: variety.name,
+          scorePercent: score,
+          recommendations: {},
+        ));
+      }
+    }
 
     return Scaffold(
       backgroundColor: context.colors.scaffoldBg,
@@ -282,11 +324,17 @@ class _RecommendScreenState extends State<RecommendScreen> {
                   final rank = entry.key + 1;
                   final s = entry.value;
                   final variety = _varieties.firstWhere((v) => v.id == s.plantId);
+                  
+                  // Extract fertilizer and regression for this variety if it's the predicted top one
+                  final predFert = (_predictionResult!['fertilizer'] as Map<String, dynamic>)[variety.name];
+                  
                   return _CassavaCard(
                     suitability: s, 
                     rank: rank, 
                     variety: variety, 
-                    plot: plot!
+                    plot: plot!,
+                    predictedFertilizer: predFert,
+                    regression: _predictionResult!['regression'],
                   );
                 }),
 
@@ -355,12 +403,16 @@ class _CassavaCard extends StatelessWidget {
   final int rank;
   final CassavaVariety variety;
   final PlotRecord plot;
+  final Map<String, dynamic>? predictedFertilizer;
+  final Map<String, dynamic>? regression;
 
   const _CassavaCard({
     required this.suitability,
     required this.rank,
     required this.variety,
     required this.plot,
+    this.predictedFertilizer,
+    this.regression,
   });
 
   @override
@@ -428,6 +480,9 @@ class _CassavaCard extends StatelessWidget {
                 onPressed: () => context.push('/cassava-fertilizer', extra: {
                   'plot': plot,
                   'variety': variety,
+                  'suitability': suitability,
+                  'predictedFertilizer': predictedFertilizer,
+                  'regression': regression,
                 }),
                 style: FilledButton.styleFrom(
                   backgroundColor: context.colors.primaryBtn,
@@ -496,8 +551,9 @@ class _TraitItem extends StatelessWidget {
 class _AllVarietiesSheet extends StatefulWidget {
   final PlotRecord plot;
   final List<CassavaVariety> varieties;
+  final Map<String, dynamic> predictionResult;
 
-  const _AllVarietiesSheet({required this.plot, required this.varieties});
+  const _AllVarietiesSheet({required this.plot, required this.varieties, required this.predictionResult});
 
   @override
   State<_AllVarietiesSheet> createState() => _AllVarietiesSheetState();
@@ -534,19 +590,21 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
   }
 
   Future<void> _loadData() async {
-    // Construct a lightweight SensorData to pass to compute isolate
-    final sensorData = SensorData(
-      ph: widget.plot.ph,
-      nitrogen: widget.plot.nitrogen,
-      phosphorus: widget.plot.phosphorus,
-      potassium: widget.plot.potassium,
-      moisture: widget.plot.moisture,
-      temperature: widget.plot.temperature,
-      ec: widget.plot.ec,
-      salinity: widget.plot.salinity,
-    );
-    // Evaluate directly
-    final results = evaluateAllSuitability(sensorData, widget.varieties);
+    final allProba = widget.predictionResult['all_proba'] as Map<String, dynamic>;
+    final sortedProba = allProba.entries.toList()..sort((a, b) => (b.value as num).compareTo(a.value as num));
+    
+    final results = <PlantSuitability>[];
+    for (final entry in sortedProba) {
+      final plantName = entry.key;
+      final score = (entry.value as num).toDouble() * 100;
+      final variety = widget.varieties.firstWhere((v) => v.name == plantName, orElse: () => widget.varieties.first);
+      results.add(PlantSuitability(
+        plantId: variety.id,
+        plantName: variety.name,
+        scorePercent: score,
+        recommendations: {},
+      ));
+    }
     
     if (mounted) {
       setState(() {
@@ -708,12 +766,17 @@ class _AllVarietiesSheetState extends State<_AllVarietiesSheet> {
                     _ => '#$rank',
                   };
 
+                  final predFert = (widget.predictionResult['fertilizer'] as Map<String, dynamic>)[variety.name];
+
                   return InkWell(
                     onTap: () {
                       Navigator.pop(context);
                       context.push('/cassava-fertilizer', extra: {
                         'plot': widget.plot,
                         'variety': variety,
+                        'suitability': s,
+                        'predictedFertilizer': predFert,
+                        'regression': widget.predictionResult['regression'],
                       });
                     },
                     borderRadius: BorderRadius.circular(10),

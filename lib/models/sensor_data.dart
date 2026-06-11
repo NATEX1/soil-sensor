@@ -71,7 +71,9 @@ class MeasurementRecord extends SensorData {
   final double lat;
   final double lng;
   final String? pointName;
-  final String? groupId;
+  final String? plotId;
+  final String? soilType;
+  final double? harvestAge;
 
   const MeasurementRecord({
     this.id,
@@ -80,7 +82,9 @@ class MeasurementRecord extends SensorData {
     required this.sampleMethod,
     this.notes,
     this.pointName,
-    this.groupId,
+    this.plotId,
+    this.soilType,
+    this.harvestAge,
     required this.lat,
     required this.lng,
     required super.ph,
@@ -101,7 +105,9 @@ class MeasurementRecord extends SensorData {
       sampleMethod: sampleMethodFromString(json['sample_method'] as String? ?? 'surface_0_15'),
       notes: json['notes'] as String?,
       pointName: json['point_name'] as String?,
-      groupId: json['group_id'] as String?,
+      plotId: (json['plot_id'] ?? json['group_id']) as String?,
+      soilType: json['soil_type'] as String?,
+      harvestAge: (json['harvest_age'] as num?)?.toDouble(),
       lat: (json['lat'] as num?)?.toDouble() ?? 0,
       lng: (json['lng'] as num?)?.toDouble() ?? 0,
       ph: (json['ph'] as num).toDouble(),
@@ -122,7 +128,9 @@ class MeasurementRecord extends SensorData {
     'sample_method': sampleMethodValues[sampleMethod],
     if (notes != null) 'notes': notes,
     if (pointName != null) 'point_name': pointName,
-    if (groupId != null) 'group_id': groupId,
+    if (plotId != null) 'plot_id': plotId,
+    if (soilType != null) 'soil_type': soilType,
+    if (harvestAge != null) 'harvest_age': harvestAge,
     'lat': lat,
     'lng': lng,
     'ph': ph,

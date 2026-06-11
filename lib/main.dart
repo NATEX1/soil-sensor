@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -103,6 +104,9 @@ final _router = GoRouter(
           CassavaFertilizerScreen(
             plot: args['plot'] as PlotRecord,
             variety: args['variety'] as CassavaVariety,
+            suitability: args['suitability'] as PlantSuitability?,
+            predictedFertilizer: args['predictedFertilizer'] as Map<String, dynamic>?,
+            regression: args['regression'] as Map<String, dynamic>?,
           ),
           state,
         );
@@ -195,7 +199,7 @@ class SoilavaApp extends StatelessWidget {
           thickness: 1,
           space: 1,
         ),
-        pageTransitionsTheme: const PageTransitionsTheme(
+        pageTransitionsTheme: PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -266,7 +270,7 @@ class SoilavaApp extends StatelessWidget {
           thickness: 1,
           space: 1,
         ),
-        pageTransitionsTheme: const PageTransitionsTheme(
+        pageTransitionsTheme: PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),

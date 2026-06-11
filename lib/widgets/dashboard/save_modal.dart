@@ -11,7 +11,7 @@ class SaveModal extends StatefulWidget {
   final SensorData? sensorData;
   final VoidCallback onClose;
   final VoidCallback onSaved;
-  final String? groupId;
+  final String? plotId;
   final String? initialPointName;
   final SampleMethod? initialSampleMethod;
   final double? sensorLat;
@@ -22,7 +22,7 @@ class SaveModal extends StatefulWidget {
       required this.sensorData,
       required this.onClose,
       required this.onSaved,
-      this.groupId,
+      this.plotId,
       this.initialPointName,
       this.initialSampleMethod,
       this.sensorLat,
@@ -36,6 +36,8 @@ class _SaveModalState extends State<SaveModal> {
   SampleMethod _sampleMethod = SampleMethod.surface0_15;
   final _notesController = TextEditingController();
   final _pointNameController = TextEditingController();
+  final _harvestAgeController = TextEditingController();
+  String? _soilType;
   double? _lat;
   double? _lng;
   bool _saving = false;
@@ -57,12 +59,12 @@ class _SaveModalState extends State<SaveModal> {
     if (widget.initialSampleMethod != null) {
       _sampleMethod = widget.initialSampleMethod!;
     }
-    // If groupId is provided (re-measure), pre-select that plot
-    if (widget.groupId != null) {
+    // If plotId is provided (re-measure), pre-select that plot
+    if (widget.plotId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final plotProvider = context.read<PlotProvider>();
         final match = plotProvider.availablePlots
-            .where((p) => p.id == widget.groupId)
+            .where((p) => p.id == widget.plotId)
             .firstOrNull;
         if (match != null) {
           setState(() => _selectedPlot = match);
@@ -83,6 +85,7 @@ class _SaveModalState extends State<SaveModal> {
   void dispose() {
     _notesController.dispose();
     _pointNameController.dispose();
+    _harvestAgeController.dispose();
     super.dispose();
   }
 
@@ -150,7 +153,7 @@ class _SaveModalState extends State<SaveModal> {
         pointName: _pointNameController.text.isEmpty
             ? null
             : _pointNameController.text,
-        groupId: _selectedPlot!.id,
+        plotId: _selectedPlot!.id,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         lat: useSensor ? widget.sensorLat! : (_lat ?? 0),
         lng: useSensor ? widget.sensorLng! : (_lng ?? 0),
@@ -162,6 +165,8 @@ class _SaveModalState extends State<SaveModal> {
         temperature: dataToSave.temperature,
         ec: dataToSave.ec,
         salinity: dataToSave.salinity,
+        soilType: _soilType,
+        harvestAge: double.tryParse(_harvestAgeController.text),
       );
       // Update the current plot in provider
       if (mounted) {
@@ -391,6 +396,63 @@ class _SaveModalState extends State<SaveModal> {
                             .toList(),
                       ),
                     ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ═══════════════════════════════════════════
+                  // ADVANCED ML OPTIONS (OPTIONAL)
+                  // ═══════════════════════════════════════════
+                  Text('ข้อมูลเพิ่มเติมสำหรับ ML (ตัวเลือก)',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textNormal)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _soilType,
+                          decoration: InputDecoration(
+                            labelText: 'ประเภทดิน',
+                            labelStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
+                            filled: true,
+                            fillColor: context.colors.cardBg,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          dropdownColor: context.colors.cardBg,
+                          style: TextStyle(color: context.colors.textNormal, fontSize: 14),
+                          items: const [
+                            DropdownMenuItem(value: 'clay_loam', child: Text('ดินร่วนเหนียว')),
+                            DropdownMenuItem(value: 'loam', child: Text('ดินร่วน')),
+                            DropdownMenuItem(value: 'loamy_sand', child: Text('ดินทรายร่วน')),
+                            DropdownMenuItem(value: 'sandy', child: Text('ดินทราย')),
+                            DropdownMenuItem(value: 'sandy_loam', child: Text('ดินร่วนปนทราย')),
+                          ],
+                          onChanged: (v) => setState(() => _soilType = v),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _harvestAgeController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(fontSize: 14, color: context.colors.textNormal),
+                          decoration: InputDecoration(
+                            labelText: 'อายุเก็บเกี่ยว (เดือน)',
+                            labelStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
+                            filled: true,
+                            fillColor: context.colors.cardBg,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: context.colors.borderColor.withValues(alpha: 0.5))),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 24),
